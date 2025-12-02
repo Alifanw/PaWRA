@@ -2,6 +2,7 @@
 /**
  * API Endpoint untuk Absensi Modern
  * Compatible dengan Raspberry Pi Doorlock System
+ * Professional OOP Architecture
  */
 
 header('Content-Type: application/json');
@@ -15,52 +16,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-require_once __DIR__ . '/classes/AttendanceController.php';
+require_once __DIR__ . '/controllers/AbsensiController.php';
 require_once __DIR__ . '/classes/ApiResponse.php';
-
-// Security token
-define('SECURE_TOKEN', 'SECURE_KEY_IGASAR');
 
 // Simple routing
 $requestUri = $_SERVER['REQUEST_URI'];
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 
-// Parse request
-if (strpos($requestUri, '/api/absen') !== false) {
-    if ($requestMethod === 'POST') {
-        handleAbsensi();
+// Initialize controller
+$controller = new AbsensiController();
+
+// Route requests
+if (preg_match('/\/api\/absen\/employee\/[^\/]+/', $requestUri)) {
+    // GET /api/absen/employee/{code}
+    if ($requestMethod === 'GET') {
+        $controller->employeeHistory();
     } else {
-        ApiResponse::error('Method not allowed', 405);
+        ApiResponse::error('Method not allowed. Use GET for /api/absen/employee/{code}', 405);
+    }
+} elseif (preg_match('/\/api\/absen\/check\/[^\/]+/', $requestUri)) {
+    // GET /api/absen/check/{code}
+    if ($requestMethod === 'GET') {
+        $controller->check();
+    } else {
+        ApiResponse::error('Method not allowed. Use GET for /api/absen/check/{code}', 405);
+    }
+} elseif (strpos($requestUri, '/api/absen/today') !== false) {
+    // GET /api/absen/today
+    if ($requestMethod === 'GET') {
+        $controller->today();
+    } else {
+        ApiResponse::error('Method not allowed. Use GET for /api/absen/today', 405);
+    }
+} elseif (strpos($requestUri, '/api/absen/stats') !== false) {
+    // GET /api/absen/stats
+    if ($requestMethod === 'GET') {
+        $controller->stats();
+    } else {
+        ApiResponse::error('Method not allowed. Use GET for /api/absen/stats', 405);
+    }
+} elseif (strpos($requestUri, '/api/absen/export') !== false) {
+    // GET /api/absen/export
+    if ($requestMethod === 'GET') {
+        $controller->export();
+    } else {
+        ApiResponse::error('Method not allowed. Use GET for /api/absen/export', 405);
+    }
+} elseif (strpos($requestUri, '/api/absen/history') !== false) {
+    // GET /api/absen/history
+    if ($requestMethod === 'GET') {
+        $controller->history();
+    } else {
+        ApiResponse::error('Method not allowed. Use GET for /api/absen/history', 405);
+    }
+} elseif (strpos($requestUri, '/api/absen') !== false) {
+    // POST /api/absen
+    if ($requestMethod === 'POST') {
+        $controller->absen();
+    } else {
+        ApiResponse::error('Method not allowed. Use POST for /api/absen', 405);
     }
 } else {
     ApiResponse::error('Endpoint not found', 404);
-}
-
-/**
- * Handle absensi request
- */
-function handleAbsensi()
-{
-    // Get JSON input
-    $input = json_decode(file_get_contents('php://input'), true);
-    
-    // Fallback to POST data
-    if (!$input) {
-        $input = $_POST;
-    }
-
-    // Validasi token
-    $token = $input['token'] ?? '';
-    if ($token !== SECURE_TOKEN) {
-        ApiResponse::error('Unauthorized - Invalid token', 403);
-    }
-
-    // Get data
-    $kode = $input['kode'] ?? ($input['kodes'] ?? '');
-    $status = $input['status'] ?? '';
-    $deviceCode = $input['device_code'] ?? 'KIOSK-01';
-
-    // Process attendance
-    $controller = new AttendanceController();
-    $controller->processAttendance($kode, $status, $deviceCode);
 }

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+        <meta id="themeColorMeta" name="theme-color" content="#f4f6fb">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Absensi Karyawan | Walini</title>
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --color-bg: #f4f6fb;
+            --color-bg-dark: #181a20;
+            --color-card: #fff;
+            --color-card-dark: #23272f;
+            --color-primary: #667eea;
+            --color-primary-dark: #8b5cf6;
+            --color-accent: #38ef7d;
+            --color-danger: #ee0979;
+            --color-warning: #f59e42;
+            --color-info: #4facfe;
+            --color-text: #22223b;
+            --color-text-dark: #f4f6fb;
+            --shadow: 0 10px 40px rgba(0,0,0,0.12);
+        }
+        body {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+            color: var(--color-text);
+            transition: background 0.3s, color 0.3s;
+        }
+        body.dark {
+            background: linear-gradient(135deg, #23272f 0%, #181a20 100%);
+            color: var(--color-text-dark);
+        }
+        .main-card {
+            background: var(--color-card);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: background 0.3s;
+        }
+        body.dark .main-card {
+            background: var(--color-card-dark);
+        }
+        .header-section {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            color: white;
+            padding: 36px 30px 30px 30px;
+            text-align: center;
+            border-bottom-left-radius: 24px;
+            border-bottom-right-radius: 24px;
+        }
+        .dark .header-section {
+            background: linear-gradient(135deg, #23272f 0%, #8b5cf6 100%);
+        }
+        .stats-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 18px;
+            padding: 24px;
+            color: white;
+            margin-bottom: 18px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stats-box:hover {
+            transform: translateY(-4px) scale(1.03);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.13);
+        }
+        .stats-box i {
+            font-size: 2.7rem;
+            opacity: 0.85;
+        }
+        .stats-box h3 {
+            font-size: 2.6rem;
+            font-weight: bold;
+            margin: 12px 0;
+        }
+        .stats-box p {
+            margin: 0;
+            font-size: 1.08rem;
+        }
+        #kodePegawai {
+            font-size: 2.1rem;
+            font-weight: 600;
+            text-align: center;
+            border: 3px solid var(--color-primary);
+            border-radius: 16px;
+            padding: 22px;
+            margin: 22px 0;
+            background: var(--color-card);
+            color: var(--color-text);
+            transition: border 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s;
+        }
+        body.dark #kodePegawai {
+            background: var(--color-card-dark);
+            color: var(--color-text-dark);
+        }
+        #kodePegawai:focus {
+            border-color: var(--color-primary-dark);
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.18);
+        }
+        .btn-absen {
+            font-size: 1.18rem;
+            font-weight: 600;
+            padding: 15px 30px;
+            border-radius: 14px;
+            margin: 10px;
+            min-width: 170px;
+            transition: all 0.3s;
+            border: none;
+            outline: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        }
+        .btn-absen:focus {
+            outline: 2px solid var(--color-primary-dark);
+        }
+        .btn-absen:hover {
+            transform: translateY(-3px) scale(1.04);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.13);
+        }
+        .btn-masuk {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        .btn-pulang {
+            background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+            color: white;
+        }
+        .btn-lembur {
+            background: linear-gradient(135deg, #f857a6 0%, #ff5858 100%);
+            color: white;
+        }
+        .btn-pulang-lembur {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        .table-wrapper {
+            max-height: 500px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .table {
+            margin: 0;
+        }
+        .badge-status {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .loading-spinner {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+        .employee-info {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 22px;
+            margin: 22px 0;
+            display: none;
+            transition: background 0.3s, color 0.3s;
+        }
+        body.dark .employee-info {
+            background: #23272f;
+            color: var(--color-text-dark);
+        }
+        .employee-info.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .action-status {
+            display: none;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .action-status.show {
+            display: block;
+        }
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            .main-card { border-radius: 12px; }
+            .header-section { padding: 24px 10px 18px 10px; }
+            .stats-box { padding: 14px; border-radius: 10px; }
+            #kodePegawai { font-size: 1.2rem; padding: 12px; }
+            .employee-info { padding: 12px; border-radius: 8px; }
+        }
+    </style>
+    <!-- Dark Mode Toggle -->
+    <button id="darkModeToggle" aria-label="Toggle dark mode" style="position:fixed;top:24px;right:24px;z-index:1000;background:var(--color-card);border:none;border-radius:50%;width:48px;height:48px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background 0.3s;">
+        <span id="darkModeIcon" style="font-size:1.5rem;">🌙</span>
+    </button>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-xl-10 col-lg-11">
+                <div class="main-card">
+                    <!-- Header -->
+                    <div class="header-section">
+                        <h1><i class="fas fa-fingerprint me-2"></i>Sistem Absensi Karyawan</h1>
+                        <p class="mb-0">Walini - Digital Attendance System</p>
+                    </div>
+                    
+                    <!-- Stats Section -->
+                    <div class="container-fluid p-4">
+                        <div class="row" id="statsContainer">
+                            <div class="col-md-4">
+                                <div class="stats-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                    <i class="fas fa-users"></i>
+                                    <h3 id="totalEmployees">-</h3>
+                                    <p>Total Karyawan</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stats-box" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                                    <i class="fas fa-user-check"></i>
+                                    <h3 id="totalMasuk">-</h3>
+                                    <p>Hadir Hari Ini</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stats-box" style="background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);">
+                                    <i class="fas fa-user-clock"></i>
+                                    <h3 id="totalPulang">-</h3>
+                                    <p>Sudah Pulang</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Input -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h3 class="text-center mb-3">
+                                    <i class="fas fa-qrcode me-2"></i>Scan Kode Karyawan
+                                </h3>
+                                <input 
+                                    type="text" 
+                                    id="kodePegawai" 
+                                    class="form-control" 
+                                    placeholder="Masukkan Kode Karyawan" 
+                                    autofocus
+                                    autocomplete="off">
+                            </div>
+                        </div>
+                        
+                        <!-- Employee Info (Hidden by default) -->
+                        <div id="employeeInfo" class="employee-info">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h4 class="mb-1" id="employeeName">-</h4>
+                                    <p class="text-muted mb-0">Kode: <span id="employeeCode">-</span></p>
+                                    <p class="text-muted mb-0" id="lastAction">-</p>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <h5 class="mb-0" id="currentTime">-</h5>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Status Info -->
+                        <div id="actionStatus" class="action-status alert"></div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="row mt-4">
+                            <div class="col-12 text-center">
+                                <button id="btnMasuk" class="btn btn-absen btn-masuk" disabled>
+                                    <i class="fas fa-door-open me-2"></i>Masuk
+                                </button>
+                                <button id="btnPulang" class="btn btn-absen btn-pulang" disabled>
+                                    <i class="fas fa-door-closed me-2"></i>Pulang
+                                </button>
+                                <button id="btnLembur" class="btn btn-absen btn-lembur" disabled>
+                                    <i class="fas fa-clock me-2"></i>Lembur
+                                </button>
+                                <button id="btnPulangLembur" class="btn btn-absen btn-pulang-lembur" disabled>
+                                    <i class="fas fa-home me-2"></i>Pulang Lembur
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Recent Activity Table -->
+                        <div class="row mt-5">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h4><i class="fas fa-list me-2"></i>Aktivitas Terbaru</h4>
+                                    <button class="btn btn-sm btn-outline-primary" id="btnRefresh">
+                                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                                    </button>
+                                </div>
+                                <div class="table-wrapper">
+                                    <table class="table table-hover">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th>Waktu</th>
+                                                <th>Nama</th>
+                                                <th>Kode</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="activityTable">
+                                            <tr>
+                                                <td colspan="4" class="text-center">
+                                                    <i class="fas fa-spinner fa-spin me-2"></i>Loading...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Footer -->
+                <div class="text-center text-white mt-4">
+                    <p>&copy; 2025 Walini - Modern Attendance System</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Spinner -->
+    <div class="loading-spinner">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script src="js/absensi-modern.js"></script>
+    <script>
+    // Light & Dark mode: OS preference, localStorage, meta theme-color, smooth transition
+    const darkToggle = document.getElementById('darkModeToggle');
+    const darkIcon = document.getElementById('darkModeIcon');
+    const themeColorMeta = document.getElementById('themeColorMeta');
+    function prefersDark() {
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    function setDarkMode(on, save = true) {
+        document.body.style.transition = 'background 0.4s, color 0.4s';
+        if(on) {
+            document.body.classList.add('dark');
+            darkIcon.textContent = '☀️';
+            themeColorMeta.setAttribute('content', '#181a20');
+            if(save) localStorage.setItem('absensiDarkMode', '1');
+        } else {
+            document.body.classList.remove('dark');
+            darkIcon.textContent = '🌙';
+            themeColorMeta.setAttribute('content', '#f4f6fb');
+            if(save) localStorage.setItem('absensiDarkMode', '0');
+        }
+    }
+    darkToggle.onclick = () => setDarkMode(!document.body.classList.contains('dark'));
+    // On load: prioritise localStorage, fallback to OS
+    (function(){
+        let mode = localStorage.getItem('absensiDarkMode');
+        if(mode === null) mode = prefersDark() ? '1' : '0';
+        setDarkMode(mode === '1', false);
+    })();
+    // Sync on OS change
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        if(!localStorage.getItem('absensiDarkMode')) setDarkMode(e.matches, false);
+    });
+    </script>
+</body>
+</html>

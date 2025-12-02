@@ -74,6 +74,7 @@ class BookingController extends Controller
             'units.*.product_id' => 'required|exists:products,id',
             'units.*.quantity' => 'required|integer|min:1',
             'units.*.unit_price' => 'required|numeric|min:0',
+            'units.*.discount_percentage' => 'nullable|numeric|min:0|max:100',
         ]);
 
         DB::beginTransaction();
@@ -82,9 +83,21 @@ class BookingController extends Controller
             $sequence = $lastBooking ? (int)substr($lastBooking->booking_code, -4) + 1 : 1;
             $bookingCode = 'BKG-' . date('Ymd') . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
 
-            $totalAmount = collect($validated['units'])->sum(function($unit) {
-                return $unit['quantity'] * $unit['unit_price'];
-            });
+            // Recalculate totals on backend (server is source of truth)
+            $totalAmount = 0;
+            $totalDiscount = 0;
+            $roomCount = 0;
+
+            foreach ($validated['units'] as $unit) {
+                $qty = (int) ($unit['quantity'] ?? 0);
+                $unitSubtotal = $qty * $unit['unit_price'];
+                $discountPercentage = $unit['discount_percentage'] ?? 0;
+                $discountAmount = ($unitSubtotal * $discountPercentage) / 100;
+
+                $totalAmount += $unitSubtotal - $discountAmount;
+                $totalDiscount += $discountAmount;
+                $roomCount += $qty;
+            }
 
             // Calculate night count
             $checkin = new \DateTime($validated['checkin_date']);
@@ -98,31 +111,53 @@ class BookingController extends Controller
                 'checkin' => $validated['checkin_date'],
                 'checkout' => $validated['checkout_date'],
                 'night_count' => $nightCount,
+                'room_count' => $roomCount,
                 'total_amount' => $totalAmount,
+                'discount_amount' => $totalDiscount,
+                'payment_status' => 'unpaid',
                 'notes' => $validated['notes'],
                 'status' => 'pending',
                 'created_by' => auth()->id(),
             ]);
 
+            // Create booking units with discount information
             foreach ($validated['units'] as $unit) {
+                $discountPercentage = $unit['discount_percentage'] ?? 0;
+                $unitSubtotal = $unit['quantity'] * $unit['unit_price'];
+                $discountAmount = ($unitSubtotal * $discountPercentage) / 100;
+
                 BookingUnit::create([
                     'booking_id' => $booking->id,
                     'product_id' => $unit['product_id'],
                     'quantity' => $unit['quantity'],
                     'unit_price' => $unit['unit_price'],
-                    'subtotal' => $unit['quantity'] * $unit['unit_price'],
+                    'subtotal' => $unitSubtotal,
+                    'discount_percentage' => $discountPercentage,
+                    'discount_amount' => $discountAmount,
                 ]);
             }
 
             DB::commit();
 
             return redirect()->route('admin.bookings.index')
-                ->with('success', 'Booking created: ' . $bookingCode);
+                ->with('success', 'Booking created: ' . $bookingCode)
+                ->with('booking_id', $booking->id);
 
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withInput()->with('error', 'Failed to create booking: ' . $e->getMessage());
         }
+    }
+
+    public function print(Booking $booking)
+    {
+        $booking->load(['bookingUnits.product']);
+
+        $pdf = \PDF::loadView('pdf.booking-receipt', [
+            'booking' => $booking,
+        ]);
+
+        return $pdf->stream("receipt-{$booking->booking_code}.pdf");
     }
 
     public function show(Booking $booking)
@@ -138,7 +173,10 @@ class BookingController extends Controller
                 'checkin_date' => $booking->checkin,
                 'checkout_date' => $booking->checkout,
                 'night_count' => $booking->night_count,
+                'room_count' => $booking->room_count,
                 'total_amount' => $booking->total_amount,
+                'payment_status' => $booking->payment_status,
+                'remaining_balance' => max(0, $booking->total_amount - $booking->bookingPayments->sum('amount')),
                 'notes' => $booking->notes,
                 'status' => $booking->status,
                 'created_by_name' => $booking->creator?->name,
@@ -147,13 +185,17 @@ class BookingController extends Controller
                     'product_name' => $unit->product->name,
                     'quantity' => $unit->quantity,
                     'unit_price' => $unit->unit_price,
+                    'discount_percentage' => $unit->discount_percentage,
+                    'discount_amount' => $unit->discount_amount,
                     'subtotal' => $unit->subtotal,
+                    'subtotal_after_discount' => ($unit->unit_price * $unit->quantity) - ($unit->discount_amount ?? 0),
                 ]),
                 'payments' => $booking->bookingPayments->map(fn($payment) => [
-                    'payment_date' => $payment->payment_date,
+                    'id' => $payment->id,
+                    'payment_date' => $payment->paid_at,
                     'amount' => $payment->amount,
                     'payment_method' => $payment->payment_method,
-                    'status' => $payment->status,
+                    'payment_reference' => $payment->payment_reference ?? null,
                 ]),
             ],
         ]);

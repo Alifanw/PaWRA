@@ -1,3 +1,117 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  /* keep backward-compatible aliases so existing styles work */
+  --color-bg: var(--bg, #f8fafc);
+  --color-bg-secondary: var(--bg-soft, #ffffff);
+  --color-text: var(--text, #161b22);
+  --color-card: var(--card, #f3f4f6);
+  --color-border: var(--border-color, #e5e7eb);
+  --color-navbar: var(--header, #ffffff);
+  --color-sidebar: var(--sidebar, #f8fafc);
+  --color-shadow: var(--card-shadow, 0 2px 8px rgba(0,0,0,0.04));
+}
+
+[data-theme="dark"] {
+  /* aliases keep compatibility while using canonical theme variables */
+  --color-bg: var(--bg, #0d1117);
+  --color-bg-secondary: var(--bg-soft, #161b22);
+  --color-text: var(--text, #f8fafc);
+  --color-card: var(--card, #161b22);
+  --color-border: var(--border-color, #22262c);
+  --color-navbar: var(--header, #161b22);
+  --color-sidebar: var(--sidebar, #0d1117);
+  --color-shadow: var(--card-shadow, 0 2px 8px rgba(0,0,0,0.24));
+}
+
+html, body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.card {
+  background: var(--color-card);
+  border-radius: 12px;
+  box-shadow: var(--color-shadow);
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  margin-bottom: 1.25rem;
+}
+
+.navbar, .header {
+  background: var(--color-navbar);
+  border-bottom: 1px solid var(--color-border);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 1.25rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.sidebar {
+  background: var(--color-sidebar);
+  border-right: 1px solid var(--color-border);
+  min-width: 220px;
+  max-width: 240px;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  padding: 1.25rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    display: none;
+  }
+}
+
+.main-content {
+  margin-left: 240px;
+  padding: 2rem 1.25rem;
+  min-height: 100vh;
+  transition: margin 0.2s;
+}
+
+@media (max-width: 900px) {
+  .main-content {
+    margin-left: 0;
+    padding: 1rem 0.5rem;
+  }
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+  margin-left: auto;
+  color: var(--color-text);
+  transition: color 0.2s;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  background: var(--color-bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}

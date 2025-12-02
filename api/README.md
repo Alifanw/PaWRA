@@ -1,222 +1,360 @@
-# API Absensi Modern - Documentation
+# �� RASPBERRY PI DOORLOCK - QUICK START GUIDE
 
-## Base URL
-```
-http://projectakhir1.serverdata.asia/api
-```
+## 📍 LANGKAH PERTAMA: CARI IP RASPBERRY PI
 
-## Authentication
-Semua request harus menyertakan token keamanan:
-```json
-{
-  "token": "SECURE_KEY_IGASAR"
-}
+Raspberry Pi tidak terdeteksi di network 192.168.193.x atau 192.168.30.x
+
+### Cara 1: Gunakan Monitor + Keyboard (PALING MUDAH)
+
+1. **Hubungkan ke Raspberry Pi:**
+   - Monitor via HDMI
+   - Keyboard USB
+   - Power on Raspberry Pi
+
+2. **Login:**
+   ```
+   Login: pi
+   Password: raspberry (atau password yang sudah diset)
+   ```
+
+3. **Cek IP Address:**
+   ```bash
+   hostname -I
+   ```
+   
+   Output contoh: `192.168.1.100` ← IP ini yang dicatat!
+
+4. **Jika belum ada IP (offline):**
+   ```bash
+   # Cek network interface
+   ip addr show
+   
+   # Jika ethernet:
+   sudo dhclient eth0
+   
+   # Jika WiFi, configure:
+   sudo raspi-config
+   # Pilih: System Options → Wireless LAN
+   ```
+
+### Cara 2: Via Router Admin Panel
+
+1. Buka browser, akses router:
+   - Common addresses: `192.168.1.1`, `192.168.0.1`, `192.168.193.1`
+   - Login router (cek label di router)
+
+2. Cari menu:
+   - "Connected Devices" / "DHCP Client List" / "Device List"
+
+3. Cari device:
+   - Name: "raspberrypi" / "pi" 
+   - MAC prefix: B8:27:EB, DC:A6:32, E4:5F:01 (Raspberry Pi Foundation)
+
+### Cara 3: Scan dengan nmap (perlu install dulu)
+
+```bash
+# Install nmap
+sudo apt install nmap
+
+# Scan network
+sudo nmap -sn 192.168.193.0/24
+
+# Atau scan multiple networks
+for net in 192.168.{0,1,30,193}; do
+    echo "Scanning $net.0/24..."
+    sudo nmap -sn $net.0/24 | grep -B 2 Raspberry
+done
 ```
 
 ---
 
-## Endpoint: POST /api/absen
+## 🔧 SETELAH DAPAT IP RASPBERRY PI
 
-### Description
-Proses absensi karyawan dengan validasi lengkap dan trigger doorlock otomatis.
+### Langkah 1: Test Koneksi
 
-### Request
-
-**Headers:**
-```
-Content-Type: application/json
+```bash
+# Ganti <IP_PI> dengan IP yang didapat
+ping -c 3 <IP_PI>
 ```
 
-**Body:**
-```json
-{
-  "token": "SECURE_KEY_IGASAR",
-  "kode": "0319766798",
-  "status": "Masuk"
-}
+Contoh: `ping -c 3 192.168.1.100`
+
+**Jika success:** Lanjut ke Langkah 2  
+**Jika timeout:** Pi masih offline, cek power/network
+
+### Langkah 2: SSH ke Raspberry Pi
+
+```bash
+ssh pi@<IP_PI>
+# Password default: raspberry
 ```
 
-**Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| token | string | Yes | Security token (harus: SECURE_KEY_IGASAR) |
-| kode | string | Yes | Kode karyawan |
-| status | string | Yes | Status absensi: Masuk, Pulang, Lembur, Pulang Lembur |
-| device_code | string | No | Kode device (default: KIOSK-01) |
+**Jika "Connection refused":**
+```bash
+# Dari Pi langsung (pakai monitor):
+sudo raspi-config
+# Interface Options → SSH → Enable
+sudo systemctl enable ssh
+sudo systemctl start ssh
+```
 
----
+### Langkah 3: Install Dependencies
 
-### Response Examples
+```bash
+# Di Raspberry Pi (via SSH):
 
-#### ✅ Success - Absensi Masuk
+# Update system
+sudo apt update
+sudo apt upgrade -y
+
+# Install Python packages
+sudo apt install python3-flask python3-rpi.gpio -y
+
+# Verify
+python3 << 'PYEOF'
+import flask
+import RPi.GPIO
+print("✅ All packages installed!")
+PYEOF
+```
+
+### Langkah 4: Copy Server File
+
+```bash
+# Di server attendance (komputer ini):
+cd /var/www/airpanas/api
+
+# Copy ke Raspberry Pi
+scp doorlock_server_real.py pi@<IP_PI>:/home/pi/
+
+# Verify
+ssh pi@<IP_PI> "ls -lh /home/pi/doorlock_server_real.py"
+```
+
+### Langkah 5: Test Relay Wiring
+
+```bash
+# SSH ke Pi
+ssh pi@<IP_PI>
+
+# Test GPIO manual
+sudo python3 << 'PYEOF'
+import RPi.GPIO as GPIO
+import time
+
+print("🔧 Testing GPIO17 relay...")
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(17, GPIO.OUT)
+
+print("→ Relay ON (should CLICK)")
+GPIO.output(17, GPIO.HIGH)
+time.sleep(2)
+
+print("→ Relay OFF")
+GPIO.output(17, GPIO.LOW)
+
+GPIO.cleanup()
+print("✅ Test complete!")
+PYEOF
+```
+
+**Expected:**
+- Relay bunyi "CLICK" 
+- LED pada relay menyala/mati
+- Jika door lock terhubung, pintu membuka/tutup
+
+**Jika tidak ada CLICK:**
+- Check wiring: Pin 2 (5V) → VCC, Pin 6 (GND) → GND, Pin 11 → IN
+- Check LED relay (harus menyala jika dapat power)
+- Try GPIO lain: ubah `17` ke `27` atau `22`
+
+### Langkah 6: Start Server
+
+```bash
+# Di Raspberry Pi
+sudo python3 /home/pi/doorlock_server_real.py
+```
+
+**Expected Output:**
+```
+==================================================
+RASPBERRY PI DOORLOCK SERVER - REAL HARDWARE
+==================================================
+GPIO Mode: REAL HARDWARE
+GPIO Pin: 17 (BCM)
+Token: SECURE_KEY_IGASAR
+Default Delay: 3 seconds
+--------------------------------------------------
+ * Running on http://0.0.0.0:5000
+```
+
+**Biarkan terminal ini terbuka!**
+
+### Langkah 7: Test dari Server Attendance
+
+```bash
+# Di server attendance (terminal baru):
+
+# 1. Health check
+curl http://<IP_PI>:5000/health
+
+# Expected: {"status":"healthy","gpio_mode":"REAL"}
+
+# 2. Test relay (quick pulse)
+curl -X POST http://<IP_PI>:5000/test \
+  -H "Authorization: Bearer SECURE_KEY_IGASAR"
+
+# Expected: Relay CLICK + {"status":"success"}
+
+# 3. Test door open (full 3 seconds)
+curl -X POST http://<IP_PI>:5000/door/open \
+  -H "Authorization: Bearer SECURE_KEY_IGASAR" \
+  -H "Content-Type: application/json" \
+  -d '{"delay": 3}'
+
+# Expected: Pintu terbuka 3 detik!
+```
+
+### Langkah 8: Update Config
+
+```bash
+nano /var/www/airpanas/api/config/Config.php
+```
+
+Ubah baris:
+```php
+const DOORLOCK_API_URL = 'http://<IP_PI>:5000/door/open';
+```
+
+Contoh:
+```php
+const DOORLOCK_API_URL = 'http://192.168.1.100:5000/door/open';
+```
+
+Save: `Ctrl+O`, Enter, `Ctrl+X`
+
+### Langkah 9: Test End-to-End
+
+```bash
+cd /var/www/airpanas/api
+
+# Test attendance (akan trigger pintu!)
+./quick_test.sh 0319766798 masuk
+```
+
+**Expected:**
 ```json
 {
   "status": "success",
-  "message": "Absensi Masuk berhasil untuk John Doe",
   "data": {
-    "employee_name": "John Doe",
-    "employee_code": "0319766798",
-    "status": "Masuk",
-    "time": "2025-11-21 14:30:45",
-    "door_triggered": true
-  },
-  "timestamp": "2025-11-21 14:30:45"
+    "nama": "Adeli",
+    "door_triggered": true  ← HARUS TRUE!
+  }
 }
 ```
 
-#### ❌ Error - Karyawan Tidak Ditemukan
-```json
-{
-  "status": "error",
-  "message": "Kode karyawan tidak ditemukan",
-  "data": null,
-  "timestamp": "2025-11-21 14:30:45"
-}
-```
+**DAN PINTU MEMBUKA 3 DETIK! 🎉**
 
-#### ⚠️ Error - Validasi Gagal
-```json
-{
-  "status": "error",
-  "message": "John Doe sudah absen masuk hari ini.",
-  "data": null,
-  "timestamp": "2025-11-21 14:30:45"
-}
-```
+### Langkah 10: Setup Autostart (Optional)
 
-#### 🔒 Error - Unauthorized
-```json
-{
-  "status": "error",
-  "message": "Unauthorized - Invalid token",
-  "data": null,
-  "timestamp": "2025-11-21 14:30:45"
-}
-```
-
----
-
-## Logika Validasi Absensi
-
-### 1. Status: **Masuk**
-- ❌ Tidak boleh absen Masuk 2x dalam sehari
-- ✅ Boleh absen Masuk jika belum ada log hari ini
-
-### 2. Status: **Pulang**
-- ❌ Harus sudah absen Masuk atau Lembur sebelumnya
-- ❌ Tidak boleh Pulang 2x
-- ✅ Boleh Pulang setelah Masuk atau Lembur
-
-### 3. Status: **Lembur**
-- ❌ Harus sudah absen Pulang sebelumnya
-- ✅ Boleh Lembur setelah Pulang
-
-### 4. Status: **Pulang Lembur**
-- ❌ Harus sudah absen Lembur sebelumnya
-- ✅ Boleh Pulang Lembur setelah Lembur
-
----
-
-## Doorlock Integration
-
-### Automatic Trigger
-Setelah absensi valid, sistem otomatis:
-1. ✅ Insert ke `attendance_logs`
-2. ✅ Insert ke `door_events`
-3. ✅ POST ke Raspberry Pi API:
-   ```
-   POST http://127.0.0.1:10000/door/open
-   {
-     "token": "SECURE_KEY_IGASAR",
-     "kode": "0319766798",
-     "status": "Masuk",
-     "delay": 3
-   }
-   ```
-
-### Door Trigger Failure
-Jika Raspberry Pi tidak merespon:
-- Absensi tetap tersimpan ✅
-- Error dicatat di: `/storage/logs/doorlock_error.log`
-- Response: `door_triggered: false`
-
----
-
-## Database Tables
-
-### `employees`
-```sql
-id, code, name, is_active, created_at
-```
-
-### `attendance_logs`
-```sql
-id, employee_id, device_code, event_time, status, raw_name
-```
-
-### `door_events`
-```sql
-id, device_code, status, event_time, processed
-```
-
----
-
-## Testing Examples
-
-### cURL Test
 ```bash
-curl -X POST http://projectakhir1.serverdata.asia/api/absen \
-  -H "Content-Type: application/json" \
-  -d '{
-    "token": "SECURE_KEY_IGASAR",
-    "kode": "0319766798",
-    "status": "Masuk"
-  }'
-```
+# SSH ke Pi
+ssh pi@<IP_PI>
 
-### Postman Test
-```
-POST http://projectakhir1.serverdata.asia/api/absen
-Headers:
-  Content-Type: application/json
-Body (raw JSON):
-{
-  "token": "SECURE_KEY_IGASAR",
-  "kode": "0319766798",
-  "status": "Masuk"
-}
+# Create service
+sudo tee /etc/systemd/system/doorlock.service > /dev/null << 'SVCEOF'
+[Unit]
+Description=Doorlock Server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/pi
+ExecStart=/usr/bin/python3 /home/pi/doorlock_server_real.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+SVCEOF
+
+# Enable dan start
+sudo systemctl daemon-reload
+sudo systemctl enable doorlock
+sudo systemctl start doorlock
+
+# Check status
+sudo systemctl status doorlock
+
+# View logs
+journalctl -u doorlock -f
 ```
 
 ---
 
-## Error Codes
+## 🎯 QUICK TROUBLESHOOTING
 
-| HTTP Code | Meaning |
-|-----------|---------|
-| 200 | Success |
-| 400 | Bad Request - Data tidak lengkap |
-| 403 | Forbidden - Token tidak valid |
-| 404 | Not Found - Endpoint tidak ditemukan |
-| 405 | Method Not Allowed |
-| 500 | Internal Server Error |
-
----
-
-## Logs Location
-
-- **Attendance Debug**: `/storage/logs/attendance_debug.log`
-- **Doorlock Error**: `/storage/logs/doorlock_error.log`
+| Problem | Solution |
+|---------|----------|
+| Cannot find Pi IP | Use monitor+keyboard, run `hostname -I` |
+| Cannot ping Pi | Check power, network cable, WiFi config |
+| SSH refused | Enable via `sudo raspi-config` → SSH |
+| Import error | Install: `sudo apt install python3-flask python3-rpi.gpio` |
+| Relay no CLICK | Check wiring (5V, GND, GPIO17), try different GPIO |
+| Door no open | Check 12V power, test lock directly, verify relay NO contact |
+| HTTP timeout | Check firewall: `sudo ufw allow 5000` |
+| Server not start | Run with sudo: `sudo python3 ...` |
 
 ---
 
-## Migration from Old System
+## 📋 CHECKLIST LENGKAP
 
-Run migration SQL:
-```bash
-mysql -u walini_user -p walini_pj < database/migrations/migrate_old_attendance.sql
-```
+**Hardware:**
+- [ ] Raspberry Pi powered on (red LED)
+- [ ] Network connected (ethernet or WiFi)
+- [ ] Relay module wired: 5V, GND, GPIO17
+- [ ] Door lock connected to relay + 12V power
+- [ ] All connections tight and secure
 
-This will:
-1. Copy `karyawan` → `employees`
-2. Copy `log_absensi` → `attendance_logs`
-3. Verify migration results
+**Software:**
+- [ ] Found Pi IP address
+- [ ] Can SSH to Pi
+- [ ] Python Flask installed
+- [ ] RPi.GPIO installed
+- [ ] doorlock_server_real.py copied
+- [ ] Manual GPIO test SUCCESS (CLICK!)
+
+**Integration:**
+- [ ] Server running on port 5000
+- [ ] Health check returns success
+- [ ] Test endpoint triggers relay
+- [ ] Config.php updated with correct IP
+- [ ] Attendance API test triggers door
+- [ ] door_triggered: true in response
+
+**Production:**
+- [ ] Systemd service configured
+- [ ] Service autostart enabled
+- [ ] Logs monitored
+- [ ] Backup plan if Pi offline
+
+---
+
+## 🚀 NEXT STEPS
+
+1. **Cari IP Raspberry Pi** (monitor/router/nmap)
+2. **SSH ke Pi** dan install dependencies
+3. **Test relay** manual (harus bunyi CLICK)
+4. **Copy & run server** 
+5. **Test dari curl** (health, test, door/open)
+6. **Update config** dengan IP yang benar
+7. **Test attendance** → pintu terbuka! 🎉
+
+---
+
+**Need Help?**
+- Check `/var/www/airpanas/DOORLOCK_HARDWARE_SETUP.md` untuk detail lengkap
+- Run `/var/www/airpanas/api/DOORLOCK_QUICK_COMMANDS.md` untuk command reference
+
+Good luck! 🚪✨

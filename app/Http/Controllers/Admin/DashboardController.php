@@ -61,7 +61,7 @@ class DashboardController extends Controller
         return Inertia::render('Admin/Dashboard/Index', [
             'stats' => $stats,
             'recentBookings' => $recentBookings,
-            'weeklyRevenue' => $weeklyRevenue,
+            'dailySales' => $weeklyRevenue,
             'auth' => [
                 'user' => [
                     'id' => auth()->id(),
@@ -69,7 +69,7 @@ class DashboardController extends Controller
                     'full_name' => auth()->user()->full_name,
                     'email' => auth()->user()->email,
                     'role_id' => auth()->user()->role_id,
-                    'permissions' => ['*'], // Superadmin has all permissions
+                    'permissions' => ['*'],
                 ],
             ],
         ]);

@@ -1,88 +1,52 @@
 import { Fragment } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { Link, router } from '@inertiajs/react';
-import {
-    Bars3Icon,
-    BellIcon,
-    MagnifyingGlassIcon,
-    UserCircleIcon,
-} from '@heroicons/react/24/outline';
+import { Bars3Icon, UserCircleIcon } from '@heroicons/react/24/outline';
 
 function classNames(...classes) {
     return classes.filter(Boolean).join(' ');
 }
+
+// no local state required in Topbar
 
 export default function Topbar({ onToggleSidebar, auth }) {
     const handleLogout = () => {
         router.post('/logout');
     };
 
+
     return (
-        <div className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+        <div className="flex h-16 shrink-0 items-center gap-x-4 px-4 sm:gap-x-6 sm:px-6 lg:px-8">
             {/* Sidebar toggle */}
             <button
                 type="button"
                 onClick={onToggleSidebar}
-                className="-m-2.5 p-2.5 text-gray-700 hover:text-gray-900"
+                className="p-2.5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
             >
                 <span className="sr-only">Toggle sidebar</span>
                 <Bars3Icon className="h-6 w-6" aria-hidden="true" />
             </button>
 
             {/* Separator */}
-            <div className="h-6 w-px bg-gray-200" aria-hidden="true" />
+            <div className="h-6 w-px bg-slate-200 dark:bg-slate-700" aria-hidden="true" />
 
-            <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-                {/* Global search */}
-                <form className="relative flex flex-1" action="#" method="GET">
-                    <label htmlFor="search-field" className="sr-only">
-                        Search
-                    </label>
-                    <MagnifyingGlassIcon
-                        className="pointer-events-none absolute inset-y-0 left-0 h-full w-5 text-gray-400"
-                        aria-hidden="true"
-                    />
-                    <input
-                        id="search-field"
-                        className="block h-full w-full border-0 py-0 pl-8 pr-0 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm"
-                        placeholder="Search..."
-                        type="search"
-                        name="search"
-                    />
-                </form>
-
-                <div className="flex items-center gap-x-4 lg:gap-x-6">
-                    {/* Notifications */}
-                    <button
-                        type="button"
-                        className="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500"
-                    >
-                        <span className="sr-only">View notifications</span>
-                        <BellIcon className="h-6 w-6" aria-hidden="true" />
-                    </button>
-
-                    {/* Separator */}
-                    <div
-                        className="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200"
-                        aria-hidden="true"
-                    />
-
-                    {/* Profile dropdown */}
-                    <Menu as="div" className="relative">
-                        <Menu.Button className="-m-1.5 flex items-center p-1.5">
-                            <span className="sr-only">Open user menu</span>
-                            <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                <UserCircleIcon className="h-6 w-6 text-gray-400" />
-                            </div>
-                            <span className="hidden lg:flex lg:items-center">
-                                <span
-                                    className="ml-4 text-sm font-semibold leading-6 text-gray-900"
-                                    aria-hidden="true"
-                                >
-                                    {auth?.user?.full_name}
-                                </span>
+            <div className="ml-auto">
+                {/* Profile dropdown */}
+                <Menu as="div" className="relative">
+                    <Menu.Button className="flex items-center p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors">
+                        <span className="sr-only">Open user menu</span>
+                        <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                            <UserCircleIcon className="h-6 w-6 text-slate-600 dark:text-slate-300" />
+                        </div>
+                        <span className="hidden lg:flex lg:items-center">
+                            <span
+                                className="ml-4 text-sm font-semibold leading-6 text-slate-900 dark:text-slate-100"
+                                aria-hidden="true"
+                            >
+                                {auth?.user?.full_name}
                             </span>
-                        </Menu.Button>
+                        </span>
+                    </Menu.Button>
                         <Transition
                             as={Fragment}
                             enter="transition ease-out duration-100"
@@ -92,50 +56,49 @@ export default function Topbar({ onToggleSidebar, auth }) {
                             leaveFrom="transform opacity-100 scale-100"
                             leaveTo="transform opacity-0 scale-95"
                         >
-                            <Menu.Items className="absolute right-0 z-10 mt-2.5 w-48 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
-                                <Menu.Item>
-                                    {({ active }) => (
-                                        <Link
-                                            href="/profile"
-                                            className={classNames(
-                                                active ? 'bg-gray-50' : '',
-                                                'block px-3 py-1 text-sm leading-6 text-gray-900'
-                                            )}
-                                        >
-                                            Your Profile
-                                        </Link>
-                                    )}
-                                </Menu.Item>
-                                <Menu.Item>
-                                    {({ active }) => (
-                                        <Link
-                                            href="/settings"
-                                            className={classNames(
-                                                active ? 'bg-gray-50' : '',
-                                                'block px-3 py-1 text-sm leading-6 text-gray-900'
-                                            )}
-                                        >
-                                            Settings
-                                        </Link>
-                                    )}
-                                </Menu.Item>
-                                <Menu.Item>
-                                    {({ active }) => (
-                                        <button
-                                            onClick={handleLogout}
-                                            className={classNames(
-                                                active ? 'bg-gray-50' : '',
-                                                'block w-full text-left px-3 py-1 text-sm leading-6 text-gray-900'
-                                            )}
-                                        >
-                                            Sign out
-                                        </button>
-                                    )}
-                                </Menu.Item>
-                            </Menu.Items>
-                        </Transition>
-                    </Menu>
-                </div>
+                            <Menu.Items className="absolute right-0 z-10 mt-2.5 w-48 origin-top-right rounded-md bg-white dark:bg-slate-900 py-2 shadow-lg ring-1 ring-slate-900/5 dark:ring-white/5 focus:outline-none">
+                            <Menu.Item>
+                                {({ active }) => (
+                                    <Link
+                                        href="/profile"
+                                        className={classNames(
+                                            active ? 'bg-slate-50 dark:bg-slate-800' : '',
+                                            'block px-3 py-1 text-sm leading-6 text-slate-900 dark:text-slate-100'
+                                        )}
+                                    >
+                                        Your Profile
+                                    </Link>
+                                )}
+                            </Menu.Item>
+                            <Menu.Item>
+                                {({ active }) => (
+                                    <Link
+                                        href="/settings"
+                                        className={classNames(
+                                            active ? 'bg-slate-50 dark:bg-slate-800' : '',
+                                            'block px-3 py-1 text-sm leading-6 text-slate-900 dark:text-slate-100'
+                                        )}
+                                    >
+                                        Settings
+                                    </Link>
+                                )}
+                            </Menu.Item>
+                            <Menu.Item>
+                                {({ active }) => (
+                                    <button
+                                        onClick={handleLogout}
+                                        className={classNames(
+                                            active ? 'bg-slate-50 dark:bg-slate-800' : '',
+                                            'block w-full text-left px-3 py-1 text-sm leading-6 text-slate-900 dark:text-slate-100'
+                                        )}
+                                    >
+                                        Sign out
+                                    </button>
+                                )}
+                            </Menu.Item>
+                        </Menu.Items>
+                    </Transition>
+                </Menu>
             </div>
         </div>
     );

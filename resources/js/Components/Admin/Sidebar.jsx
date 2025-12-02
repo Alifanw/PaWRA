@@ -9,19 +9,25 @@ import {
     Cog6ToothIcon,
     BuildingStorefrontIcon,
     ClipboardDocumentListIcon,
+    ClipboardDocumentCheckIcon,
+    ChevronDownIcon,
 } from '@heroicons/react/24/outline';
+import { useState, useEffect } from 'react';
 
 const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: HomeIcon, permission: '*' },
     { name: 'Products', href: '/admin/products', icon: BuildingStorefrontIcon, permission: '*' },
     { name: 'Bookings', href: '/admin/bookings', icon: CalendarDaysIcon, permission: '*' },
+    { name: 'Parking', href: '/admin/parking', icon: BuildingStorefrontIcon, permission: '*' },
     { name: 'Ticket Sales', href: '/admin/ticket-sales', icon: TicketIcon, permission: '*' },
+    { name: 'Attendance', href: '/admin/attendance', icon: ClipboardDocumentCheckIcon, permission: '*' },
     {
         name: 'Reports',
         icon: ChartBarIcon,
         children: [
             { name: 'Booking Reports', href: '/admin/reports/bookings', permission: '*' },
             { name: 'Sales Reports', href: '/admin/reports/ticket-sales', permission: '*' },
+            { name: 'Export All Reports', href: '/admin/reports/export-all', permission: '*' },
         ],
     },
     { name: 'Users', href: '/admin/users', icon: UsersIcon, permission: '*' },
@@ -33,10 +39,22 @@ function classNames(...classes) {
     return classes.filter(Boolean).join(' ');
 }
 
-export default function Sidebar({ collapsed = false }) {
+export default function Sidebar({ collapsed = false, mobileOpen = false, onCloseMobile = () => {} }) {
     const { url, props } = usePage();
     const { auth } = props;
     const permissions = auth?.user?.permissions || [];
+
+    // track which parent menus are open (for animated dropdowns)
+    const [openMenus, setOpenMenus] = useState({});
+
+    const toggleMenu = (name) => {
+        setOpenMenus((s) => ({ ...s, [name]: !s[name] }));
+    };
+
+    // Close open menus when the current URL changes (navigation happened)
+    useEffect(() => {
+        setOpenMenus({});
+    }, [url]);
 
     const hasPermission = (permission) => {
         if (permission === '*') return true;
@@ -48,17 +66,30 @@ export default function Sidebar({ collapsed = false }) {
     };
 
     return (
-        <div className={classNames(
-            'flex flex-col bg-gray-900 border-r border-gray-800 transition-all duration-300',
-            collapsed ? 'w-16' : 'w-64'
-        )}>
-            {/* Logo */}
-            <div className="flex items-center justify-center h-16 bg-gray-800 border-b border-gray-700">
-                {!collapsed && (
-                    <span className="text-white font-bold text-xl">AirPanas Admin</span>
+        <>
+            {/* Mobile backdrop */}
+            <div
+                className={classNames(
+                    'fixed inset-0 bg-black/40 z-40 transition-opacity lg:hidden',
+                    mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
                 )}
-                {collapsed && (
-                    <span className="text-white font-bold text-xl">AP</span>
+                onClick={() => onCloseMobile()}
+            />
+
+            <div className={classNames(
+                // mobile: fixed overlay that slides in/out; desktop: static sidebar with width toggle
+                'fixed inset-y-0 left-0 z-50 transform transition-transform lg:static lg:translate-x-0',
+                mobileOpen ? 'translate-x-0' : '-translate-x-full',
+                collapsed ? 'lg:w-16' : 'lg:w-64',
+                'w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700'
+            )}>
+            {/* Logo */}
+            <div className="flex items-center justify-center h-16 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                {!collapsed && (
+                    <span className="text-blue-600 dark:text-blue-400 font-bold text-xl">AirPanas Walini</span>
+                )}
+                {collapsed && ( 
+                    <span className="text-blue-600 dark:text-blue-400 font-bold text-xl">AW</span>
                 )}
             </div>
 
@@ -71,37 +102,61 @@ export default function Sidebar({ collapsed = false }) {
                     }
 
                     if (item.children) {
-                        // Collapsible menu
+                        // Collapsible menu with animation
+                        const isOpen = !!openMenus[item.name];
                         return (
                             <div key={item.name} className="space-y-1">
-                                <div className={classNames(
-                                    'flex items-center px-3 py-2 text-sm font-medium rounded-md',
-                                    'text-gray-300 hover:bg-gray-800'
-                                )}>
-                                    <item.icon className="h-5 w-5 mr-3" />
-                                    {!collapsed && <span>{item.name}</span>}
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => toggleMenu(item.name)}
+                                    className={classNames(
+                                        'w-full flex items-center px-3 py-2 text-sm font-medium rounded-md justify-between',
+                                        'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors'
+                                    )}
+                                >
+                                    <div className="flex items-center">
+                                        <item.icon className="h-5 w-5 mr-3" />
+                                        {!collapsed && <span>{item.name}</span>}
+                                    </div>
+                                    {!collapsed && (
+                                        <ChevronDownIcon className={classNames('h-4 w-4 transition-transform', isOpen ? 'rotate-180' : 'rotate-0')} />
+                                    )}
+                                </button>
+
+                                {/* Animated children container */}
                                 {!collapsed && (
-                                    <div className="ml-4 space-y-1">
-                                        {item.children.map((child) => {
-                                            if (child.permission && !hasPermission(child.permission)) {
-                                                return null;
-                                            }
-                                            return (
-                                                <Link
-                                                    key={child.name}
-                                                    href={child.href}
-                                                    className={classNames(
-                                                        'flex items-center px-3 py-2 text-sm font-medium rounded-md',
-                                                        isActive(child.href)
-                                                            ? 'bg-gray-800 text-white'
-                                                            : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                                                    )}
-                                                >
-                                                    {child.name}
-                                                </Link>
-                                            );
-                                        })}
+                                    <div className={classNames(
+                                        'ml-4 overflow-hidden transition-all duration-300',
+                                        isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                                    )}>
+                                        <div className="space-y-1">
+                                            {item.children.map((child) => {
+                                                if (child.permission && !hasPermission(child.permission)) {
+                                                    return null;
+                                                }
+                                                return (
+                                                    <Link
+                                                        key={child.name}
+                                                        href={child.href}
+                                                        onClick={() => {
+                                                            // collapse submenu immediately and notify layout to close on small screens
+                                                            setOpenMenus({});
+                                                            if (typeof window !== 'undefined') {
+                                                                window.dispatchEvent(new CustomEvent('sidebar:close'));
+                                                            }
+                                                        }}
+                                                        className={classNames(
+                                                            'flex items-center px-3 py-2 text-sm font-medium rounded-md',
+                                                            isActive(child.href)
+                                                                ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300'
+                                                                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors'
+                                                        )}
+                                                    >
+                                                        {child.name}
+                                                    </Link>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -112,11 +167,18 @@ export default function Sidebar({ collapsed = false }) {
                         <Link
                             key={item.name}
                             href={item.href}
+                            onClick={() => {
+                                // close any open submenus and notify layout to close sidebar on small screens
+                                setOpenMenus({});
+                                if (typeof window !== 'undefined') {
+                                    window.dispatchEvent(new CustomEvent('sidebar:close'));
+                                }
+                            }}
                             className={classNames(
                                 'flex items-center px-3 py-2 text-sm font-medium rounded-md',
                                 isActive(item.href)
-                                    ? 'bg-gray-800 text-white'
-                                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300'
+                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors'
                             )}
                         >
                             <item.icon className="h-5 w-5" />
@@ -128,22 +190,23 @@ export default function Sidebar({ collapsed = false }) {
 
             {/* User info */}
             {!collapsed && auth?.user && (
-                <div className="p-4 border-t border-gray-800">
+                <div className="p-4 border-t border-slate-200 dark:border-slate-700">
                     <div className="flex items-center">
                         <div className="flex-shrink-0">
-                            <div className="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center">
-                                <span className="text-white text-sm font-medium">
+                            <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                                <span className="text-blue-600 dark:text-blue-300 text-sm font-medium">
                                     {auth.user.full_name?.charAt(0).toUpperCase()}
                                 </span>
                             </div>
                         </div>
                         <div className="ml-3">
-                            <p className="text-sm font-medium text-white">{auth.user.full_name}</p>
-                            <p className="text-xs text-gray-400">{auth.user.role_name}</p>
+                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{auth.user.full_name}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">{auth.user.role_name}</p>
                         </div>
                     </div>
                 </div>
             )}
-        </div>
+            </div>
+        </>
     );
 }

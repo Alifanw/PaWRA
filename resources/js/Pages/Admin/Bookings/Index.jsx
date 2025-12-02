@@ -24,7 +24,7 @@ export default function BookingIndex({ auth, bookings, filters }) {
             cell: ({ row }) => (
                 <div>
                     <div className="font-medium">{row.original.customer_name}</div>
-                    <div className="text-sm text-gray-500">{row.original.customer_phone}</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">{row.original.customer_phone}</div>
                 </div>
             ),
         },
@@ -46,11 +46,11 @@ export default function BookingIndex({ auth, bookings, filters }) {
             accessorKey: 'status',
             cell: ({ row }) => {
                 const statusColors = {
-                    'pending': 'bg-yellow-100 text-yellow-800',
-                    'confirmed': 'bg-blue-100 text-blue-800',
-                    'checked_in': 'bg-green-100 text-green-800',
-                    'checked_out': 'bg-gray-100 text-gray-800',
-                    'cancelled': 'bg-red-100 text-red-800',
+                    'pending': 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
+                    'confirmed': 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200',
+                    'checked_in': 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
+                    'checked_out': 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200',
+                    'cancelled': 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200',
                 };
                 return (
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[row.original.status]}`}>
@@ -99,8 +99,8 @@ export default function BookingIndex({ auth, bookings, filters }) {
             <div className="mb-6">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-2xl font-semibold text-gray-900">Bookings</h1>
-                        <p className="mt-1 text-sm text-gray-600">
+                        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Bookings</h1>
+                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                             Manage customer bookings and reservations
                         </p>
                     </div>
@@ -115,10 +115,10 @@ export default function BookingIndex({ auth, bookings, filters }) {
             </div>
 
             {/* Filters */}
-            <div className="mb-4 bg-white p-4 rounded-lg shadow">
+            <div className="mb-4 bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Search</label>
                         <input
                             type="text"
                             defaultValue={filters?.search}
@@ -127,18 +127,18 @@ export default function BookingIndex({ auth, bookings, filters }) {
                                 { preserveState: true, replace: true }
                             )}
                             placeholder="Search by code, name, phone..."
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status</label>
                         <select
                             defaultValue={filters?.status || ''}
                             onChange={(e) => router.get(route('admin.bookings.index'), 
                                 { ...filters, status: e.target.value }, 
                                 { preserveState: true, replace: true }
                             )}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
                         >
                             <option value="">All Status</option>
                             <option value="pending">Pending</option>

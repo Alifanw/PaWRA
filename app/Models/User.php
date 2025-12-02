@@ -7,10 +7,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\Employee;
+use App\Models\Role;
+use App\Traits\HasPermissions;
 
 class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens;
+    use HasPermissions;
 
     /**
      * The attributes that are mass assignable.
@@ -23,6 +27,7 @@ class User extends Authenticatable
         'full_name',
         'email',
         'role_id',
+        'employee_id',
         'profile_picture',
         'is_block',
         'last_login_at',
@@ -58,7 +63,24 @@ class User extends Authenticatable
      */
     public function role()
     {
+        // legacy single-role support
         return $this->belongsTo(Role::class);
+    }
+
+    /**
+     * Roles (many-to-many)
+     */
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'role_user', 'user_id', 'role_id')->withTimestamps();
+    }
+
+    /**
+     * Optional employee mapping
+     */
+    public function employee()
+    {
+        return $this->belongsTo(Employee::class);
     }
 
     /**

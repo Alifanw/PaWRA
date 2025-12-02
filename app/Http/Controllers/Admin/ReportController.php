@@ -8,6 +8,12 @@ use App\Models\TicketSale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Models\ParkingTransaction;
+use App\Models\ParkingBooking;
+use App\Models\ParkingMonitoring;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\AllReportsExport;
 
 class ReportController extends Controller
 {
@@ -90,5 +96,135 @@ class ReportController extends Controller
             'summary' => $summary,
             'filters' => compact('startDate', 'endDate'),
         ]);
+    }
+
+    public function exportAll(Request $request)
+    {
+        $startDate = $request->start_date ?? now()->subMonth()->toDateString();
+        $endDate = $request->end_date ?? now()->toDateString();
+
+        $bookings = Booking::with(['creator'])->whereBetween('checkin', [$startDate, $endDate])->get();
+        $sales = TicketSale::with(['cashier'])->whereBetween('sale_date', [$startDate, $endDate])->get();
+        $parkingTx = ParkingTransaction::with(['user'])->whereBetween('created_at', [$startDate, $endDate])->get();
+        $parkingBookings = ParkingBooking::with(['user'])->whereBetween('created_at', [$startDate, $endDate])->get();
+        $monitorings = ParkingMonitoring::with(['user'])->whereBetween('created_at', [$startDate, $endDate])->get();
+
+        $filename = 'all_reports_'.$startDate.'_to_'.$endDate.'.csv';
+
+        $response = new StreamedResponse(function () use ($bookings, $sales, $parkingTx, $parkingBookings, $monitorings) {
+            $handle = fopen('php://output', 'w');
+
+            // Header row
+            fputcsv($handle, [
+                'source', 'id', 'code_or_invoice', 'date', 'name', 'vehicle_number', 'vehicle_type', 'qty', 'amount', 'status', 'notes', 'extra'
+            ]);
+
+            // Bookings
+            foreach ($bookings as $b) {
+                fputcsv($handle, [
+                    'booking',
+                    $b->id,
+                    $b->booking_code,
+                    $b->checkin,
+                    $b->customer_name,
+                    '',
+                    '',
+                    $b->night_count ?? '',
+                    $b->total_amount ?? '',
+                    $b->status,
+                    '',
+                    json_encode(['created_by' => $b->creator?->name]),
+                ]);
+            }
+
+            // Ticket sales
+            foreach ($sales as $s) {
+                fputcsv($handle, [
+                    'ticket_sale',
+                    $s->id,
+                    $s->invoice_no,
+                    $s->sale_date,
+                    $s->cashier?->name,
+                    '',
+                    '',
+                    $s->total_qty ?? '',
+                    $s->net_amount ?? '',
+                    '',
+                    '',
+                    json_encode(['gross_amount' => $s->gross_amount, 'discount' => $s->discount_amount]),
+                ]);
+            }
+
+            // Parking transactions
+            foreach ($parkingTx as $t) {
+                fputcsv($handle, [
+                    'parking_transaction',
+                    $t->id,
+                    $t->transaction_code ?? '',
+                    $t->created_at ?? '',
+                    $t->user?->name ?? $t->created_by_name ?? '',
+                    $t->vehicle_number ?? '',
+                    $t->vehicle_type ?? '',
+                    $t->vehicle_count ?? '',
+                    $t->total_amount ?? '',
+                    $t->status ?? '',
+                    $t->notes ?? '',
+                    '',
+                ]);
+            }
+
+            // Parking bookings
+            foreach ($parkingBookings as $b) {
+                fputcsv($handle, [
+                    'parking_booking',
+                    $b->id,
+                    $b->booking_code ?? '',
+                    $b->created_at ?? '',
+                    $b->user?->name ?? '',
+                    '',
+                    $b->vehicle_type ?? '',
+                    $b->vehicle_count ?? '',
+                    $b->total_amount ?? '',
+                    $b->status ?? '',
+                    $b->notes ?? '',
+                    '',
+                ]);
+            }
+
+            // Monitorings
+            foreach ($monitorings as $m) {
+                fputcsv($handle, [
+                    'parking_monitoring',
+                    $m->id,
+                    '',
+                    $m->created_at ?? '',
+                    $m->user?->name ?? '',
+                    '',
+                    $m->vehicle_type ?? '',
+                    $m->vehicle_count ?? '',
+                    $m->amount ?? '',
+                    $m->status ?? '',
+                    $m->notes ?? '',
+                    '',
+                ]);
+            }
+
+            fclose($handle);
+        });
+
+        $response->headers->set('Content-Type', 'text/csv; charset=utf-8');
+        $response->headers->set('Content-Disposition', 'attachment; filename="'.$filename.'"');
+
+        return $response;
+    }
+
+    public function exportAllXlsx(Request $request)
+    {
+        $startDate = $request->start_date ?? now()->subMonth()->toDateString();
+        $endDate = $request->end_date ?? now()->toDateString();
+
+        $filename = 'all_reports_'.$startDate.'_to_'.$endDate.'.xlsx';
+
+        return Excel::download(new AllReportsExport($startDate, $endDate), $filename);
     }
 }

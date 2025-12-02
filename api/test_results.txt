@@ -1,0 +1,6 @@
+==========================================
+ATTENDANCE API - COMPLETE TEST SUITE
+==========================================
+
+1. Testing Today's Summary...
+{"status":"success","message":"Today summary retrieved","data":{"summary":{"total_masuk":1,"total_pulang":0,"total_lembur":0,"total_activity":1,"total_employees":7},"recent_activities":[{"employee_code":"0319766798","employee_name":"Adeli","status":"masuk","time":"13:17:26"}],"date":"2025-11-21"},"timestamp":"2025-11-21 06:37:40"}

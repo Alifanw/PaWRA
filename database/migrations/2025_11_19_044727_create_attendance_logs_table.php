@@ -13,7 +13,14 @@ return new class extends Migration
     {
         Schema::create('attendance_logs', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
+            $table->enum('status', ['masuk', 'pulang', 'lembur', 'pulang_lembur']);
+            $table->dateTime('event_time');
+            $table->text('notes')->nullable();
             $table->timestamps();
+            
+            $table->index('employee_id');
+            $table->index('event_time');
         });
     }
 

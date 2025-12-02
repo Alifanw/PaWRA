@@ -41,7 +41,7 @@ export default function ProductIndex({ auth, products, categories, filters }) {
             accessorKey: 'is_active',
             cell: ({ row }) => (
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    row.original.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    row.original.is_active ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
                 }`}>
                     {row.original.is_active ? 'Active' : 'Inactive'}
                 </span>
@@ -121,8 +121,8 @@ export default function ProductIndex({ auth, products, categories, filters }) {
             <div className="mb-6">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-2xl font-semibold text-gray-900">Products</h1>
-                        <p className="mt-1 text-sm text-gray-600">
+                        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Products</h1>
+                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                             Manage your product catalog
                         </p>
                     </div>
@@ -141,11 +141,13 @@ export default function ProductIndex({ auth, products, categories, filters }) {
             </div>
 
             {/* Filters */}
-            <div className="bg-white rounded-lg shadow p-4 mb-6">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                        <label htmlFor="filter-search" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Search</label>
                         <input
+                            id="filter-search"
+                            name="search"
                             type="text"
                             defaultValue={filters?.search}
                             onChange={(e) => router.get(route('admin.products.index'), 
@@ -153,18 +155,20 @@ export default function ProductIndex({ auth, products, categories, filters }) {
                                 { preserveState: true, replace: true }
                             )}
                             placeholder="Search by name or code..."
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <label htmlFor="filter-category" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Category</label>
                         <select
+                            id="filter-category"
+                            name="category_id"
                             defaultValue={filters?.category_id || ''}
                             onChange={(e) => router.get(route('admin.products.index'), 
                                 { ...filters, category_id: e.target.value }, 
                                 { preserveState: true, replace: true }
                             )}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
                         >
                             <option value="">All Categories</option>
                             {categories.map(cat => (
@@ -184,21 +188,23 @@ export default function ProductIndex({ auth, products, categories, filters }) {
             {/* Create/Edit Modal */}
             <Modal show={showModal} onClose={closeModal} maxWidth="2xl">
                 <form onSubmit={handleSubmit} className="p-6">
-                    <h2 className="text-xl font-semibold mb-4">
+                    <h2 className="text-xl font-semibold mb-4 dark:text-slate-100">
                         {editingProduct ? 'Edit Product' : 'Add New Product'}
                     </h2>
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Category <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                                value={data.category_id}
-                                onChange={e => setData('category_id', e.target.value)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                required
-                            >
+                            <label htmlFor="product-category" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    Category <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    id="product-category"
+                                    name="category_id"
+                                    value={data.category_id}
+                                    onChange={e => setData('category_id', e.target.value)}
+                                    className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
+                                    required
+                                >
                                 <option value="">Select Category</option>
                                 {categories.map(cat => (
                                     <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -208,62 +214,70 @@ export default function ProductIndex({ auth, products, categories, filters }) {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Product Code <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                value={data.code}
-                                onChange={e => setData('code', e.target.value)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                placeholder="e.g. VILLA-A"
-                                maxLength={30}
-                                required
-                            />
+                            <label htmlFor="product-code" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    Product Code <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    id="product-code"
+                                    name="code"
+                                    type="text"
+                                    value={data.code}
+                                    onChange={e => setData('code', e.target.value)}
+                                    className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
+                                    placeholder="e.g. VILLA-A"
+                                    maxLength={30}
+                                    required
+                                />
                             {errors.code && <p className="mt-1 text-sm text-red-600">{errors.code}</p>}
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Product Name <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                value={data.name}
-                                onChange={e => setData('name', e.target.value)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                placeholder="e.g. Villa Premium A"
-                                maxLength={100}
-                                required
-                            />
+                            <label htmlFor="product-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    Product Name <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    id="product-name"
+                                    name="name"
+                                    type="text"
+                                    value={data.name}
+                                    onChange={e => setData('name', e.target.value)}
+                                    className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
+                                    placeholder="e.g. Villa Premium A"
+                                    maxLength={100}
+                                    required
+                                />
                             {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Base Price (Rp) <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="number"
-                                value={data.base_price}
-                                onChange={e => setData('base_price', e.target.value)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                placeholder="e.g. 1500000"
-                                min="0"
-                                step="1000"
-                                required
-                            />
+                            <label htmlFor="product-base-price" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    Base Price (Rp) <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    id="product-base-price"
+                                    name="base_price"
+                                    type="number"
+                                    value={data.base_price}
+                                    onChange={e => setData('base_price', e.target.value)}
+                                    className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
+                                    placeholder="e.g. 1500000"
+                                    min="0"
+                                    step="1000"
+                                    required
+                                />
                             {errors.base_price && <p className="mt-1 text-sm text-red-600">{errors.base_price}</p>}
                         </div>
 
                         <div className="flex items-center">
                             <input
+                                id="product-is-active"
+                                name="is_active"
                                 type="checkbox"
                                 checked={data.is_active}
                                 onChange={e => setData('is_active', e.target.checked)}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded dark:bg-slate-700 dark:border-slate-600"
                             />
-                            <label className="ml-2 block text-sm text-gray-900">
+                            <label htmlFor="product-is-active" className="ml-2 block text-sm text-slate-900 dark:text-slate-100">
                                 Active
                             </label>
                         </div>
@@ -273,7 +287,7 @@ export default function ProductIndex({ auth, products, categories, filters }) {
                         <button
                             type="button"
                             onClick={closeModal}
-                            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            className="px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:border-slate-600"
                         >
                             Cancel
                         </button>

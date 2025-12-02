@@ -85,8 +85,8 @@ export default function Dashboard({ auth, stats, recentBookings, dailySales }) {
         <AdminLayout auth={auth} title="Dashboard">
             {/* Page header */}
             <div className="mb-6">
-                <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-                <p className="mt-1 text-sm text-gray-600">
+                <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Dashboard</h1>
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                     Welcome back, {auth.user.full_name}
                 </p>
             </div>
@@ -96,19 +96,19 @@ export default function Dashboard({ auth, stats, recentBookings, dailySales }) {
                 {statCards.map((stat) => (
                     <div
                         key={stat.name}
-                        className="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:px-6 sm:py-6"
+                        className="relative overflow-hidden rounded-lg bg-white dark:bg-slate-800 px-4 py-5 shadow sm:px-6 sm:py-6 border border-slate-200 dark:border-slate-700"
                     >
                         <dt>
                             <div className="absolute rounded-md bg-blue-500 p-3">
                                 <stat.icon className="h-6 w-6 text-white" aria-hidden="true" />
                             </div>
-                            <p className="ml-16 truncate text-sm font-medium text-gray-500">{stat.name}</p>
+                            <p className="ml-16 truncate text-sm font-medium text-slate-500 dark:text-slate-400">{stat.name}</p>
                         </dt>
                         <dd className="ml-16 flex items-baseline">
-                            <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
+                            <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{stat.value}</p>
                             <p
                                 className={`ml-2 flex items-baseline text-sm font-semibold ${
-                                    stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
+                                    stat.changeType === 'positive' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                                 }`}
                             >
                                 {stat.changeType === 'positive' ? (
@@ -125,31 +125,31 @@ export default function Dashboard({ auth, stats, recentBookings, dailySales }) {
 
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                 {/* Sales chart */}
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 border border-slate-200 dark:border-slate-700">
                     <Line options={salesChartOptions} data={salesChartData} />
                 </div>
 
                 {/* Recent bookings */}
-                <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Bookings</h3>
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 border border-slate-200 dark:border-slate-700">
+                    <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-4">Recent Bookings</h3>
                     <div className="flow-root">
-                        <ul className="-my-5 divide-y divide-gray-200">
+                        <ul className="-my-5 divide-y divide-slate-200 dark:divide-slate-700">
                             {recentBookings?.map((booking) => (
                                 <li key={booking.id} className="py-4">
                                     <div className="flex items-center space-x-4">
                                         <div className="flex-1 min-w-0">
-                                            <p className="truncate text-sm font-medium text-gray-900">
+                                            <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
                                                 {booking.customer_name}
                                             </p>
-                                            <p className="truncate text-sm text-gray-500">
+                                            <p className="truncate text-sm text-slate-500 dark:text-slate-400">
                                                 {booking.booking_code}
                                             </p>
                                         </div>
                                         <div>
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                                booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                'bg-gray-100 text-gray-800'
+                                                booking.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                                                booking.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+                                                'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200'
                                             }`}>
                                                 {booking.status}
                                             </span>

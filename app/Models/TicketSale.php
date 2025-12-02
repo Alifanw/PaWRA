@@ -15,6 +15,9 @@ class TicketSale extends Model
         'discount_amount',
         'net_amount',
         'status',
+        'transaction_status',
+        'payment_method',
+        'payment_reference',
     ];
 
     protected $casts = [
@@ -23,6 +26,11 @@ class TicketSale extends Model
         'discount_amount' => 'decimal:2',
         'net_amount' => 'decimal:2',
     ];
+
+    public function payments()
+    {
+        return $this->hasMany(\App\Models\TicketSalePayment::class, 'ticket_sale_id');
+    }
 
     /**
      * Get the cashier that made the sale.

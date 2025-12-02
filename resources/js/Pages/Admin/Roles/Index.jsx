@@ -65,7 +65,7 @@ export default function RoleIndex({ auth, roles, filters, availablePermissions }
     return (
         <AdminLayout auth={auth} title="Roles">
             <div className="mb-6 flex justify-between items-center">
-                <div><h1 className="text-2xl font-semibold">Roles</h1><p className="text-sm text-gray-600">Manage user roles</p></div>
+                <div><h1 className="text-2xl font-semibold dark:text-slate-100">Roles</h1><p className="text-sm text-slate-600 dark:text-slate-400">Manage user roles</p></div>
                 <button onClick={() => { setEditingRole(null); reset(); setShowModal(true); }} className="inline-flex items-center px-4 py-2 text-sm rounded-md text-white bg-blue-600 hover:bg-blue-700">
                     <PlusIcon className="-ml-1 mr-2 h-5 w-5" />Add Role
                 </button>
@@ -73,12 +73,12 @@ export default function RoleIndex({ auth, roles, filters, availablePermissions }
             <DataTable columns={columns} data={roles.data} pagination={roles} />
             <Modal show={showModal} onClose={closeModal} maxWidth="3xl">
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <h2 className="text-xl font-semibold">{editingRole ? 'Edit' : 'Add'} Role</h2>
-                    <input type="text" value={data.name} onChange={e => setData('name', e.target.value)} placeholder="Role Name" className="w-full rounded-md border-gray-300" required />
-                    <textarea value={data.description} onChange={e => setData('description', e.target.value)} placeholder="Description" className="w-full rounded-md border-gray-300" rows={2} />
+                    <h2 className="text-xl font-semibold dark:text-slate-100">{editingRole ? 'Edit' : 'Add'} Role</h2>
+                    <input type="text" value={data.name} onChange={e => setData('name', e.target.value)} placeholder="Role Name" className="w-full rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600" required />
+                    <textarea value={data.description} onChange={e => setData('description', e.target.value)} placeholder="Description" className="w-full rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600" rows={2} />
                     <div>
-                        <label className="block text-sm font-medium mb-2">Permissions</label>
-                        <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto border rounded p-3">
+                        <label className="block text-sm font-medium mb-2 dark:text-slate-100">Permissions</label>
+                        <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto border rounded p-3 border-slate-300 dark:border-slate-600 dark:bg-slate-700">
                             {availablePermissions?.map(perm => (
                                 <label key={perm} className="flex items-center">
                                     <input type="checkbox" checked={data.permissions.includes(perm)} onChange={() => togglePermission(perm)} className="rounded" />
@@ -88,7 +88,7 @@ export default function RoleIndex({ auth, roles, filters, availablePermissions }
                         </div>
                     </div>
                     <div className="flex justify-end space-x-3 pt-4">
-                        <button type="button" onClick={closeModal} className="px-4 py-2 border rounded-md">Cancel</button>
+                        <button type="button" onClick={closeModal} className="px-4 py-2 border border-slate-300 rounded-md dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-700">Cancel</button>
                         <button type="submit" disabled={processing} className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700">{processing ? 'Saving...' : (editingRole ? 'Update' : 'Create')}</button>
                     </div>
                 </form>

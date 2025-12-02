@@ -21,21 +21,22 @@ class Role extends Model
      */
     public function users()
     {
+        // keep legacy relation
         return $this->hasMany(User::class);
     }
 
     /**
      * Get the permissions for the role.
      */
-    public function rolePermissions()
+    // many-to-many permissions via pivot `permission_role`
+    public function permissions()
     {
-        return $this->hasMany(RolePermission::class);
+        // new normalized permissions
+        return $this->belongsToMany(Permission::class, 'permission_role', 'role_id', 'permission_id')->withTimestamps();
     }
 
-    /**
-     * Alias for rolePermissions
-     */
-    public function permissions()
+    // legacy role_permissions table support
+    public function rolePermissions()
     {
         return $this->hasMany(RolePermission::class);
     }
