@@ -56,6 +56,16 @@ class AuthenticatedSessionController extends Controller
             'session_id' => session()->getId(),
         ]);
 
+        // Temporary debug: dump session contents to log to help diagnose client/session mismatch
+        try {
+            Log::debug('Auth: Session dump after save', [
+                'session_id' => session()->getId(),
+                'session_all' => $request->session()->all(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Auth: Failed to dump session', ['error' => $e->getMessage()]);
+        }
+
         // Return HTTP 302 redirect (standard redirect response)
         return redirect($dashboardPath);
     }
