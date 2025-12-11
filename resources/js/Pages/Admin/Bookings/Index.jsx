@@ -155,6 +155,8 @@ export default function BookingIndex({ auth, bookings, filters }) {
                 columns={columns}
                 data={bookings.data}
                 pagination={bookings}
+                routeName="admin.bookings.index"
+                filters={filters}
             />
         </AdminLayout>
     );

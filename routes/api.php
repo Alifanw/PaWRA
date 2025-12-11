@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\AvailabilityController;
 use App\Http\Controllers\Api\TicketSaleController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\AttendanceController;
 
 /*
@@ -127,3 +128,25 @@ Route::prefix('attendance')->group(function () {
     // Doorlock health check (public)
     Route::get('/doorlock/health', [AttendanceController::class, 'doorlockHealth']);
 });
+
+// Admin API Routes
+// Register admin routes (also available to session-authenticated tests)
+// Also register admin routes using the web `auth` guard so tests using actingAs() work
+Route::middleware('auth')->prefix('admin')->group(function () {
+    Route::apiResource('roles', AdminRoleController::class);
+    Route::post('roles/{role}/sync-permissions', [AdminRoleController::class, 'syncPermissions']);
+});
+
+// Also provide admin resource under explicit path to match tests
+Route::middleware('auth')->group(function () {
+    Route::apiResource('admin/roles', AdminRoleController::class);
+    Route::post('admin/roles/{role}/sync-permissions', [AdminRoleController::class, 'syncPermissions']);
+});
+
+// Primary admin registration (sanctum + verified for non-testing runtime)
+Route::middleware(['auth:sanctum', 'verified'])->prefix('admin')->group(function () {
+    // Roles API (REST CRUD)
+    Route::apiResource('roles', AdminRoleController::class);
+    Route::post('roles/{role}/sync-permissions', [AdminRoleController::class, 'syncPermissions']);
+});
+

@@ -61,10 +61,11 @@ class CheckPermission
      */
     protected function getUserPermissions(int $userId): array
     {
-        $permissions = DB::table('users')
-            ->join('roles', 'users.role_id', '=', 'roles.id')
+        $permissions = DB::table('role_user')
+            ->join('roles', 'role_user.role_id', '=', 'roles.id')
             ->join('role_permissions', 'roles.id', '=', 'role_permissions.role_id')
-            ->where('users.id', $userId)
+            ->join('users', 'role_user.user_id', '=', 'users.id')
+            ->where('role_user.user_id', $userId)
             ->where('users.is_block', false)
             ->pluck('role_permissions.permission')
             ->toArray();

@@ -70,7 +70,7 @@ export default function RoleIndex({ auth, roles, filters, availablePermissions }
                     <PlusIcon className="-ml-1 mr-2 h-5 w-5" />Add Role
                 </button>
             </div>
-            <DataTable columns={columns} data={roles.data} pagination={roles} />
+            <DataTable columns={columns} data={roles.data} pagination={roles} routeName="admin.roles.index" filters={filters} />
             <Modal show={showModal} onClose={closeModal} maxWidth="3xl">
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <h2 className="text-xl font-semibold dark:text-slate-100">{editingRole ? 'Edit' : 'Add'} Role</h2>

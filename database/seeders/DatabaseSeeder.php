@@ -51,28 +51,60 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // Create default superadmin user if not exists (do not modify existing superadmin)
-        $super = \DB::table('users')->where('email', 'admin@airpanas.local')->first();
-        if (!$super) {
-            \DB::table('users')->insert([
+        // Create or update default superadmin user and ensure pivot role_user exists
+        $superEmail = 'admin@airpanas.local';
+        $superRoleId = \DB::table('roles')->where('name', 'superadmin')->value('id') ?: 1;
+
+        \DB::table('users')->updateOrInsert(
+            ['email' => $superEmail],
+            [
                 'username' => 'admin',
                 'name' => 'Super Administrator',
                 'full_name' => 'Super Administrator',
-                'email' => 'admin@airpanas.local',
-                'password' => bcrypt('123123'), // DEFAULT PASSWORD FOR DEMO
+                'email' => $superEmail,
+                'password' => bcrypt('Admin123!'), // DEFAULT PASSWORD FOR DEMO
                 'is_active' => true,
-                'role_id' => 1, // superadmin
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
-        } else {
-            // Update existing superadmin with username and role_id if missing
-            \DB::table('users')->where('email', 'admin@airpanas.local')->update([
-                'username' => 'admin',
-                'full_name' => $super->full_name ?? 'Super Administrator',
-                'role_id' => 1,
+                'email_verified_at' => now(),
+            ]
+        );
+
+        // Ensure the role_user pivot row exists for superadmin (if pivot table exists)
+        if (\Illuminate\Support\Facades\Schema::hasTable('role_user')) {
+            $superId = \DB::table('users')->where('email', $superEmail)->value('id');
+            if ($superId && $superRoleId) {
+                \DB::table('role_user')->updateOrInsert(
+                    ['role_id' => $superRoleId, 'user_id' => $superId],
+                    ['created_at' => now(), 'updated_at' => now()]
+                );
+            }
+        }
+
+        // Also create a superadmin alias user with username 'superadmin' (many people try this)
+        \DB::table('users')->updateOrInsert(
+            ['email' => 'superadmin@airpanas.local'],
+            [
+                'username' => 'superadmin',
+                'name' => 'Super Administrator',
+                'full_name' => 'Super Administrator',
+                'email' => 'superadmin@airpanas.local',
+                'password' => bcrypt('Admin123!'),
                 'is_active' => true,
-            ]);
+                'created_at' => now(),
+                'updated_at' => now(),
+                'email_verified_at' => now(),
+            ]
+        );
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('role_user')) {
+            $aliasId = \DB::table('users')->where('email', 'superadmin@airpanas.local')->value('id');
+            if ($aliasId && $superRoleId) {
+                \DB::table('role_user')->updateOrInsert(
+                    ['role_id' => $superRoleId, 'user_id' => $aliasId],
+                    ['created_at' => now(), 'updated_at' => now()]
+                );
+            }
         }
 
         // Create or update sample admin user
@@ -89,6 +121,17 @@ class DatabaseSeeder extends Seeder
                 'created_at' => now(),
             ]
         );
+        // Ensure pivot for admin2 (if pivot table exists)
+        if (\Illuminate\Support\Facades\Schema::hasTable('role_user')) {
+            $admin2Id = \DB::table('users')->where('email', 'admin2@airpanas.local')->value('id');
+            $adminRoleId = \DB::table('roles')->where('name', 'admin')->value('id');
+            if ($admin2Id && $adminRoleId) {
+                \DB::table('role_user')->updateOrInsert(
+                    ['role_id' => $adminRoleId, 'user_id' => $admin2Id],
+                    ['created_at' => now(), 'updated_at' => now()]
+                );
+            }
+        }
 
         // Create or update sample cashier user
         \DB::table('users')->updateOrInsert(
@@ -104,6 +147,17 @@ class DatabaseSeeder extends Seeder
                 'created_at' => now(),
             ]
         );
+        // Ensure pivot for cashier (if pivot table exists)
+        if (\Illuminate\Support\Facades\Schema::hasTable('role_user')) {
+            $cashierId = \DB::table('users')->where('email', 'cashier@airpanas.local')->value('id');
+            $cashierRoleId = \DB::table('roles')->where('name', 'cashier')->value('id');
+            if ($cashierId && $cashierRoleId) {
+                \DB::table('role_user')->updateOrInsert(
+                    ['role_id' => $cashierRoleId, 'user_id' => $cashierId],
+                    ['created_at' => now(), 'updated_at' => now()]
+                );
+            }
+        }
 
         // Additional roles for domain-specific access (monitoring, booking, ticketing, parking)
         $extraRoles = [
@@ -168,7 +222,7 @@ class DatabaseSeeder extends Seeder
                 ]
             );
             $mid = \DB::table('users')->where('email', 'monitor@airpanas.local')->value('id');
-            if ($mid) {
+            if ($mid && \Illuminate\Support\Facades\Schema::hasTable('role_user')) {
                 \DB::table('role_user')->updateOrInsert(['role_id' => $monitoringRole->id, 'user_id' => $mid], ['created_at' => now(), 'updated_at' => now()]);
             }
         }
@@ -189,7 +243,7 @@ class DatabaseSeeder extends Seeder
                 ]
             );
             $bid = \DB::table('users')->where('email', 'booking@airpanas.local')->value('id');
-            if ($bid) {
+            if ($bid && \Illuminate\Support\Facades\Schema::hasTable('role_user')) {
                 \DB::table('role_user')->updateOrInsert(['role_id' => $bookingRole->id, 'user_id' => $bid], ['created_at' => now(), 'updated_at' => now()]);
             }
         }
@@ -210,7 +264,7 @@ class DatabaseSeeder extends Seeder
                 ]
             );
             $tid = \DB::table('users')->where('email', 'ticket@airpanas.local')->value('id');
-            if ($tid) {
+            if ($tid && \Illuminate\Support\Facades\Schema::hasTable('role_user')) {
                 \DB::table('role_user')->updateOrInsert(['role_id' => $ticketingRole->id, 'user_id' => $tid], ['created_at' => now(), 'updated_at' => now()]);
             }
         }
@@ -231,7 +285,7 @@ class DatabaseSeeder extends Seeder
                 ]
             );
             $pid = \DB::table('users')->where('email', 'parking@airpanas.local')->value('id');
-            if ($pid) {
+            if ($pid && \Illuminate\Support\Facades\Schema::hasTable('role_user')) {
                 \DB::table('role_user')->updateOrInsert(['role_id' => $parkingRole->id, 'user_id' => $pid], ['created_at' => now(), 'updated_at' => now()]);
             }
         }

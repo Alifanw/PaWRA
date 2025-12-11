@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { router } from '@inertiajs/react';
 import {
     useReactTable,
     getCoreRowModel,
@@ -9,12 +10,23 @@ import {
 } from '@tanstack/react-table';
 import { ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
-export default function DataTable({ columns, data, pagination, onPaginationChange }) {
+export default function DataTable({ columns, data, pagination, onPaginationChange, routeName, filters }) {
+    // Ensure filters is always an object
+    const safeFilters = filters || {};
     // Memoize columns and data to avoid unnecessary re-renders
     const memoColumns = useMemo(() => columns || [], [columns]);
-    const memoData = useMemo(() => data || [], [data]);
+    const memoData = useMemo(() => {
+        // Handle both array and paginated object formats
+        if (Array.isArray(data)) {
+            return data;
+        }
+        if (data && Array.isArray(data.data)) {
+            return data.data;
+        }
+        return data ? [data] : [];
+    }, [data]);
     // Loading / empty states
-    if (data == null) {
+    if (data === undefined || data === null) {
         return (
             <div className="p-6 text-center">
                 <div className="inline-flex items-center gap-3">
@@ -28,11 +40,36 @@ export default function DataTable({ columns, data, pagination, onPaginationChang
         );
     }
 
-    if (Array.isArray(data) && data.length === 0) {
+    if (memoData.length === 0) {
         return (
-            <div className="p-6 text-center text-slate-500">No results found.</div>
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 text-center text-slate-500 dark:text-slate-400">
+                No data found. Try adjusting your filters or creating new records.
+            </div>
         );
     }
+
+    const handlePageChange = (newPage) => {
+        if (routeName) {
+            // Build query string with page parameter
+            const params = new URLSearchParams({
+                ...safeFilters,
+                page: newPage
+            });
+            router.get(`?${params.toString()}`, { preserveState: true, replace: true });
+        }
+    };
+
+    const handlePageSizeChange = (newSize) => {
+        if (routeName) {
+            // Build query string with per_page parameter
+            const params = new URLSearchParams({
+                ...safeFilters,
+                per_page: newSize,
+                page: 1
+            });
+            router.get(`?${params.toString()}`, { preserveState: true, replace: true });
+        }
+    };
 
     const pageCount = pagination && (pagination.last_page ?? (pagination.total && pagination.per_page ? Math.ceil(pagination.total / pagination.per_page) : undefined));
 
@@ -126,15 +163,15 @@ export default function DataTable({ columns, data, pagination, onPaginationChang
                 <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 sm:px-6 rounded-lg shadow">
                     <div className="flex justify-between flex-1 sm:hidden">
                         <button
-                            onClick={() => table.previousPage()}
-                            disabled={!table.getCanPreviousPage()}
+                            onClick={() => handlePageChange(pagination.current_page - 1)}
+                            disabled={!pagination.prev_page_url}
                             className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
                         >
                             Previous
                         </button>
                         <button
-                            onClick={() => table.nextPage()}
-                            disabled={!table.getCanNextPage()}
+                            onClick={() => handlePageChange(pagination.current_page + 1)}
+                            disabled={!pagination.next_page_url}
                             className="relative ml-3 inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
                         >
                             Next
@@ -151,8 +188,8 @@ export default function DataTable({ columns, data, pagination, onPaginationChang
                         <div>
                             <nav className="inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
                                     <button
-                                        onClick={() => table.setPageIndex(0)}
-                                        disabled={!table.getCanPreviousPage()}
+                                        onClick={() => handlePageChange(1)}
+                                        disabled={!pagination.prev_page_url}
                                         title="First page"
                                         className="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 dark:text-slate-500 ring-1 ring-inset ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
                                     >
@@ -163,8 +200,8 @@ export default function DataTable({ columns, data, pagination, onPaginationChang
                                     <span className="text-slate-900 dark:text-slate-100">Page {pagination.current_page} of {pagination.last_page ?? pageCount ?? '—'}</span>
                                 </span>
                                 <button
-                                    onClick={() => table.setPageIndex((pageCount ?? (pagination.last_page ?? 1)) - 1)}
-                                    disabled={!table.getCanNextPage()}
+                                    onClick={() => handlePageChange(pagination.last_page ?? pageCount ?? 1)}
+                                    disabled={!pagination.next_page_url}
                                     title="Last page"
                                     className="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 dark:text-slate-500 ring-1 ring-inset ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
                                 >
@@ -173,9 +210,9 @@ export default function DataTable({ columns, data, pagination, onPaginationChang
                                 </button>
                                 {/* Page size selector */}
                                 <select
-                                    value={table.getState().pagination.pageSize}
-                                    onChange={(e) => table.setPageSize(Number(e.target.value))}
-                                    className="ml-3 rounded-md border border-slate-300 bg-white text-sm px-2 py-1"
+                                    value={pagination.per_page}
+                                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                                    className="ml-3 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 text-sm px-2 py-1"
                                 >
                                     {[10,25,50,100].map((s) => (
                                         <option key={s} value={s}>{s} / page</option>

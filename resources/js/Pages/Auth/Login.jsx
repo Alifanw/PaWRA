@@ -142,15 +142,7 @@ export default function Login({ status, canResetPassword }) {
                                 admin.
                             </p>
 
-                            <div className="text-sm">
-                                Belum punya akun?{" "}
-                                <Link
-                                    href={route("register")}
-                                    className="underline font-semibold hover:text-blue-100 transition"
-                                >
-                                    Daftar sekarang
-                                </Link>
-                            </div>
+                          
                         </div>
                     </div>
 

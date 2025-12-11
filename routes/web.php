@@ -55,6 +55,7 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
     Route::get('/ticket-sales/create', [TicketSaleController::class, 'create'])->name('ticket-sales.create');
     Route::post('/ticket-sales', [TicketSaleController::class, 'store'])->name('ticket-sales.store');
     Route::get('/ticket-sales/{ticketSale}', [TicketSaleController::class, 'show'])->name('ticket-sales.show');
+    Route::get('/ticket-sales/{ticketSale}/print', [TicketSaleController::class, 'print'])->name('ticket-sales.print');
     Route::post('/ticket-sales/{ticketSale}/pay', [TicketSaleController::class, 'pay'])->name('ticket-sales.pay');
     Route::post('/ticket-sales/{ticketSale}/refund', [TicketSaleController::class, 'refund'])->name('ticket-sales.refund');
     Route::post('/ticket-sales/{ticketSale}/cancel', [TicketSaleController::class, 'cancel'])->name('ticket-sales.cancel');
@@ -129,5 +130,3 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
-
-// (debug route removed)

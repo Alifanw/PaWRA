@@ -44,30 +44,15 @@ class AuthenticatedSessionController extends Controller
         $request->session()->put('user_id', $user->id);
         $request->session()->put('user_name', $user->username);
         $request->session()->put('user_full_name', $user->full_name ?? $user->name);
-        
-        // Save session to database immediately
-        $request->session()->save();
 
-        $dashboardPath = '/admin/dashboard';
-
-        Log::info('Auth: Login successful, session created and persisted', [
+        Log::info('Auth: Login successful', [
             'user_id' => $user->id,
             'username' => $user->username,
             'session_id' => session()->getId(),
         ]);
 
-        // Temporary debug: dump session contents to log to help diagnose client/session mismatch
-        try {
-            Log::debug('Auth: Session dump after save', [
-                'session_id' => session()->getId(),
-                'session_all' => $request->session()->all(),
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('Auth: Failed to dump session', ['error' => $e->getMessage()]);
-        }
-
-        // Return HTTP 302 redirect (standard redirect response)
-        return redirect($dashboardPath);
+        // Laravel middleware will automatically save session and set cookie with correct ID
+        return redirect('/admin/dashboard');
     }
 
     /**

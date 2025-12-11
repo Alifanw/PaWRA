@@ -75,7 +75,7 @@ class User extends Authenticatable
      */
     public function getAuthIdentifierName()
     {
-        return 'username';
+        return $this->getKeyName(); // Returns 'id' (the primary key)
     }
 
     /**
@@ -109,5 +109,42 @@ class User extends Authenticatable
     {
         return $this->hasMany(TicketSale::class, 'cashier_id');
     }
+
+    /**
+     * Check if user has a permission
+     */
+    public function hasPermission(string $permission): bool
+    {
+        return $this->roles()
+            ->with('permissions')
+            ->get()
+            ->flatMap(fn ($role) => $role->permissions->pluck('permission'))
+            ->contains($permission);
+    }
+
+    /**
+     * Check if user is superadmin
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->roles()
+            ->where('name', 'superadmin')
+            ->exists();
+    }
+
+    /**
+     * Backwards-compatible role_id accessor.
+     * Returns underlying `role_id` column if present, otherwise the first related role id.
+     */
+    public function getRoleIdAttribute(): ?int
+    {
+        if (array_key_exists('role_id', $this->attributes) && !is_null($this->attributes['role_id'])) {
+            return (int) $this->attributes['role_id'];
+        }
+
+        $first = $this->roles()->limit(1)->pluck('role_id')->first();
+        return $first ? (int) $first : null;
+    }
 }
+
 

@@ -83,10 +83,22 @@ export default function Create({ auth, products }) {
 
     const totalQty = cart.reduce((sum, i) => sum + Number(i.quantity), 0);
 
+    const calculateTotalDiscount = () => {
+        return cart.reduce((sum, item) => {
+            const qty = Number(item.quantity) || 0;
+            const price = Number(item.unit_price) || 0;
+            const discountPercent = item.discount === '' ? 0 : Number(item.discount) || 0;
+            const itemDiscount = qty * price * (discountPercent / 100);
+            return sum + itemDiscount;
+        }, 0);
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (cart.length === 0) return;
         setProcessing(true);
+
+        const totalDiscount = calculateTotalDiscount();
 
         router.post(
             route('admin.ticket-sales.store'),
@@ -97,6 +109,7 @@ export default function Create({ auth, products }) {
                     quantity: i.quantity,
                     discount: i.discount === '' ? 0 : Number(i.discount)
                 })),
+                discount_amount: totalDiscount,
                 payment_method: paymentMethod,
                 payment_reference: paymentReference,
             },
@@ -266,6 +279,11 @@ export default function Create({ auth, products }) {
                                 <span className="font-semibold dark:text-slate-100">Rp {grossAmount.toLocaleString()}</span>
                             </div>
 
+                            <div className="flex justify-between">
+                                <span className="text-slate-600 dark:text-slate-400">Total Discount:</span>
+                                <span className="font-semibold text-orange-600 dark:text-orange-400">Rp {calculateTotalDiscount().toLocaleString()}</span>
+                            </div>
+
                             <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
                                 <div className="flex justify-between text-lg font-bold">
                                     <span className="dark:text-slate-100">Net Amount:</span>
@@ -276,8 +294,8 @@ export default function Create({ auth, products }) {
                             </div>
 
                             <div className="mt-4">
-                                <label htmlFor="ts-payment-method" className="block text-sm text-slate-700 dark:text-slate-300">Payment Method</label>
-                                <select id="ts-payment-method" name="payment_method" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="w-full rounded-md mt-1">
+                                <label htmlFor="ts-payment-method" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Payment Method</label>
+                                <select id="ts-payment-method" name="payment_method" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md bg-white dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:focus:ring-blue-400">
                                     <option value="cash">Cash</option>
                                     <option value="bank_transfer">Bank Transfer</option>
                                     <option value="e_wallet">E-Wallet</option>
@@ -285,8 +303,8 @@ export default function Create({ auth, products }) {
                             </div>
 
                             <div className="mt-3">
-                                <label htmlFor="ts-payment-reference" className="block text-sm text-slate-700 dark:text-slate-300">Payment Reference (optional)</label>
-                                <input id="ts-payment-reference" name="payment_reference" type="text" value={paymentReference} onChange={e => setPaymentReference(e.target.value)} className="w-full rounded-md mt-1" />
+                                <label htmlFor="ts-payment-reference" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Payment Reference (optional)</label>
+                                <input id="ts-payment-reference" name="payment_reference" type="text" value={paymentReference} onChange={e => setPaymentReference(e.target.value)} placeholder="Enter reference (e.g., Transaction ID)" className="w-full px-3 py-2 border border-slate-300 rounded-md bg-white dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:focus:ring-blue-400" />
                             </div>
 
                         </div>
@@ -294,7 +312,7 @@ export default function Create({ auth, products }) {
                         <button
                             type="submit"
                             disabled={cart.length === 0 || processing}
-                            className="w-full py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-slate-300 font-semibold"
+                            className="w-full py-3 px-4 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:bg-slate-400 disabled:cursor-not-allowed disabled:hover:bg-slate-400 transition-colors duration-200 shadow-md"
                         >
                             {processing ? 'Processing...' : 'Complete Sale'}
                         </button>
@@ -304,7 +322,7 @@ export default function Create({ auth, products }) {
                             onClick={() =>
                                 router.visit(route('admin.ticket-sales.index'))
                             }
-                            className="w-full mt-2 py-2 border border-slate-300 rounded-md hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-700 dark:text-slate-100"
+                            className="w-full mt-2 py-3 px-4 border border-slate-300 text-slate-700 dark:text-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition-colors duration-200 font-medium"
                         >
                             Cancel
                         </button>

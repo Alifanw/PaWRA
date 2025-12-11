@@ -5,7 +5,7 @@
     import { PlusIcon, EyeIcon, PrinterIcon } from '@heroicons/react/24/outline';
     import { format } from 'date-fns';
 
-    export default function TicketSaleIndex({ auth, ticketSales }) {
+    export default function TicketSaleIndex({ auth, ticketSales, filters }) {
         const columns = [
             {
                 header: 'Invoice No',
@@ -158,6 +158,8 @@
                     columns={columns}
                     data={ticketSales.data}
                     pagination={ticketSales}
+                    routeName="admin.ticket-sales.index"
+                    filters={filters}
                 />
             </AdminLayout>
         );

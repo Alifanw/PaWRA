@@ -90,7 +90,7 @@ class TicketSaleController extends Controller
                 'gross_amount' => $grossAmount,
                 'discount_amount' => $discountAmount,
                 'net_amount' => $netAmount,
-                'status' => 'confirmed',
+                'status' => $transactionStatus === 'paid' ? 'paid' : 'open',
                 'transaction_status' => $transactionStatus,
                 'payment_method' => $validated['payment_method'] ?? 'cash',
                 'payment_reference' => $validated['payment_reference'] ?? null,
@@ -306,5 +306,14 @@ class TicketSaleController extends Controller
                 ]),
             ],
         ]);
+    }
+
+    public function print(TicketSale $ticketSale)
+    {
+        $ticketSale->load(['items.product', 'cashier']);
+        $pdf = \PDF::loadView('pdf.ticket-sale-receipt', [
+            'sale' => $ticketSale,
+        ]);
+        return $pdf->stream("struk-{$ticketSale->invoice_no}.pdf");
     }
 }

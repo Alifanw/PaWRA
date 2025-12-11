@@ -2,10 +2,18 @@
 
 namespace App\Models;
 
+
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Role extends Model
 {
+    use HasFactory;
+
+    protected $keyType = 'int';
+    public $incrementing = true;
+
     protected $fillable = [
         'name',
         'description',
@@ -21,23 +29,62 @@ class Role extends Model
      */
     public function users()
     {
-        // keep legacy relation
         return $this->hasMany(User::class);
     }
 
     /**
-     * Get the permissions for the role.
+     * Role has many permissions
      */
-    // many-to-many permissions via pivot `permission_role`
-    public function permissions()
+    public function permissions(): HasMany
     {
-        // new normalized permissions
-        return $this->belongsToMany(Permission::class, 'permission_role', 'role_id', 'permission_id')->withTimestamps();
+        return $this->hasMany(RolePermission::class)->orderBy('created_at');
     }
 
-    // legacy role_permissions table support
-    public function rolePermissions()
+    /**
+     * Get permission strings
+     */
+    public function getPermissionStrings(): array
     {
-        return $this->hasMany(RolePermission::class);
+        return $this->permissions()
+            ->orderBy('created_at')
+            ->pluck('permission')
+            ->toArray();
+    }
+
+    /**
+     * Sync permissions for this role
+     */
+    public function syncPermissions(array $permissions): void
+    {
+        $permissions = array_filter(
+            array_map(fn ($p) => trim(strtolower($p)), $permissions),
+            fn ($p) => !empty($p)
+        );
+
+        $permissions = array_unique($permissions);
+
+        $existing = $this->permissions()
+            ->pluck('permission')
+            ->toArray();
+
+        $toRemove = array_diff($existing, $permissions);
+        $toAdd = array_diff($permissions, $existing);
+
+        if (!empty($toRemove)) {
+            $this->permissions()
+                ->whereIn('permission', $toRemove)
+                ->delete();
+        }
+
+        if (!empty($toAdd)) {
+            $insertData = array_map(fn ($p) => [
+                'role_id' => $this->id,
+                'permission' => $p,
+                'created_at' => now(),
+            ], $toAdd);
+
+            RolePermission::insert($insertData);
+        }
     }
 }
+

@@ -183,6 +183,8 @@ export default function ProductIndex({ auth, products, categories, filters }) {
                 columns={columns}
                 data={products.data}
                 pagination={products}
+                routeName="admin.products.index"
+                filters={filters}
             />
 
             {/* Create/Edit Modal */}

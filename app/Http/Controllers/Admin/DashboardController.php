@@ -58,18 +58,32 @@ class DashboardController extends Controller
                 ];
             });
 
+        $user = auth()->user();
+
+        $roles = $user->roles()->get()->map(function ($r) {
+            return ['id' => $r->id, 'name' => $r->name, 'display_name' => $r->display_name ?? null];
+        })->values();
+
+        $permissions = $user->roles()
+            ->with('permissions')
+            ->get()
+            ->flatMap(fn($role) => $role->permissions->pluck('permission'))
+            ->unique()
+            ->values()
+            ->toArray();
+
         return Inertia::render('Admin/Dashboard/Index', [
             'stats' => $stats,
             'recentBookings' => $recentBookings,
             'dailySales' => $weeklyRevenue,
             'auth' => [
                 'user' => [
-                    'id' => auth()->id(),
-                    'username' => auth()->user()->username,
-                    'full_name' => auth()->user()->full_name,
-                    'email' => auth()->user()->email,
-                    'role_id' => auth()->user()->role_id,
-                    'permissions' => ['*'],
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'full_name' => $user->full_name,
+                    'email' => $user->email,
+                    'roles' => $roles,
+                    'permissions' => $permissions,
                 ],
             ],
         ]);

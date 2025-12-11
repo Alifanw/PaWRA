@@ -41,7 +41,7 @@ export default function AuditLogIndex({ auth, logs, actions, filters }) {
                     </div>
                 </div>
             </div>
-            <DataTable columns={columns} data={logs.data} pagination={logs} />
+            <DataTable columns={columns} data={logs.data} pagination={logs} routeName="admin.audit-logs.index" filters={filters} />
         </AdminLayout>
     );
 }

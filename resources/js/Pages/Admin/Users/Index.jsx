@@ -95,7 +95,7 @@ export default function UserIndex({ auth, users, roles, filters }) {
                     </select>
                 </div>
             </div>
-            <DataTable columns={columns} data={users.data} pagination={users} />
+            <DataTable columns={columns} data={users.data} pagination={users} routeName="admin.users.index" filters={filters} />
             <Modal show={showModal} onClose={closeModal} maxWidth="2xl">
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{editingUser ? 'Edit' : 'Add'} User</h2>

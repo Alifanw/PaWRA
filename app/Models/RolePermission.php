@@ -3,23 +3,24 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RolePermission extends Model
 {
     protected $table = 'role_permissions';
-    
+    public $timestamps = true;
+
     protected $fillable = [
         'role_id',
         'permission',
     ];
 
-    public $timestamps = false;
-
     /**
-     * Get the role that owns the permission.
+     * RolePermission belongs to Role
      */
-    public function role()
+    public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
     }
 }
+

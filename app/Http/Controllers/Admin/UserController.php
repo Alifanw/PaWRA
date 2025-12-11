@@ -13,7 +13,7 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::with('role');
+        $query = User::with('roles');
 
         if ($request->has('search')) {
             $search = $request->search;
@@ -24,7 +24,10 @@ class UserController extends Controller
         }
 
         if ($request->has('role_id')) {
-            $query->where('role_id', $request->role_id);
+            $roleId = $request->role_id;
+            $query->whereHas('roles', function ($q) use ($roleId) {
+                $q->where('roles.id', $roleId);
+            });
         }
 
         $users = $query->latest()
@@ -34,7 +37,7 @@ class UserController extends Controller
                 'name' => $user->name,
                 'username' => $user->username,
                 'email' => $user->email,
-                'role_name' => $user->role?->name ?? '-',
+                'role_name' => $user->roles->first()?->name ?? '-',
                 'is_active' => $user->is_active,
                 'created_at' => $user->created_at->format('Y-m-d H:i'),
             ]);
@@ -59,13 +62,17 @@ class UserController extends Controller
             'is_active' => 'boolean',
         ]);
 
+        $roleId = $validated['role_id'];
+        unset($validated['role_id']);
+
         $validated['password'] = Hash::make($validated['password']);
         $validated['is_active'] = $validated['is_active'] ?? true;
 
-        User::create($validated);
+        $user = User::create($validated);
+        // assign role via pivot
+        $user->roles()->sync([$roleId]);
 
-        return redirect()->route('admin.users.index')
-            ->with('success', 'User created successfully');
+        return back()->with('success', 'User created successfully');
     }
 
     public function update(Request $request, User $user)
@@ -79,6 +86,9 @@ class UserController extends Controller
             'is_active' => 'boolean',
         ]);
 
+        $roleId = $validated['role_id'];
+        unset($validated['role_id']);
+
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
         } else {
@@ -86,6 +96,8 @@ class UserController extends Controller
         }
 
         $user->update($validated);
+        // sync role via pivot
+        $user->roles()->sync([$roleId]);
 
         return redirect()->route('admin.users.index')
             ->with('success', 'User updated successfully');
