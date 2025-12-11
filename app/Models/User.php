@@ -23,13 +23,16 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'username',
-        'password',
+        'name',
         'full_name',
+        'password',
         'email',
-        'role_id',
-        'employee_id',
+        'email_verified_at',
+        'remember_token',
         'profile_picture',
         'is_block',
+        'is_active',
+        'role_id',
         'last_login_at',
     ];
 
@@ -68,6 +71,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the name of the unique identifier for the user.
+     */
+    public function getAuthIdentifierName()
+    {
+        return 'username';
+    }
+
+    /**
      * Roles (many-to-many)
      */
     public function roles()
@@ -99,3 +110,4 @@ class User extends Authenticatable
         return $this->hasMany(TicketSale::class, 'cashier_id');
     }
 }
+

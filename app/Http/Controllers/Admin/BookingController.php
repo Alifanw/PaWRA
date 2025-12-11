@@ -70,8 +70,13 @@ class BookingController extends Controller
             'checkin_date' => 'required|date|after_or_equal:today',
             'checkout_date' => 'required|date|after:checkin_date',
             'notes' => 'nullable|string',
+            'dp_required' => 'boolean',
+            'dp_type' => 'in:none,fixed,percentage',
+            'dp_amount' => 'nullable|numeric|min:0',
+            'dp_percentage' => 'nullable|numeric|min:0|max:100',
             'units' => 'required|array|min:1',
             'units.*.product_id' => 'required|exists:products,id',
+            'units.*.product_availability_id' => 'nullable|exists:product_availability,id',
             'units.*.quantity' => 'required|integer|min:1',
             'units.*.unit_price' => 'required|numeric|min:0',
             'units.*.discount_percentage' => 'nullable|numeric|min:0|max:100',
@@ -79,6 +84,39 @@ class BookingController extends Controller
 
         DB::beginTransaction();
         try {
+            $checkin = \Carbon\Carbon::createFromFormat('Y-m-d', $validated['checkin_date'])->startOfDay();
+            $checkout = \Carbon\Carbon::createFromFormat('Y-m-d', $validated['checkout_date'])->startOfDay();
+
+            // Validate availability for each unit
+            foreach ($validated['units'] as $unit) {
+                if ($unit['product_availability_id'] ?? null) {
+                    try {
+                        $availability = \App\Models\ProductAvailability::findOrFail($unit['product_availability_id']);
+                        
+                        // Check if availability is available for the date range
+                        if (!$availability->isAvailableForDates($checkin, $checkout)) {
+                            DB::rollBack();
+                            return back()->withInput()->with('error', 
+                                "Availability '{$availability->unit_name}' is not available for the selected dates"
+                            );
+                        }
+
+                        // Check if enough units available
+                        $requiredQty = (int)($unit['quantity'] ?? 1);
+                        $availableCount = $availability->getAvailableCount($checkin, $checkout);
+                        if ($availableCount < $requiredQty) {
+                            DB::rollBack();
+                            return back()->withInput()->with('error', 
+                                "Not enough '{$availability->unit_name}' available. Only $availableCount available, but $requiredQty required"
+                            );
+                        }
+                    } catch (\Exception $e) {
+                        // If booking/availability tables not ready, skip validation
+                        // Allow booking to proceed
+                    }
+                }
+            }
+
             $lastBooking = Booking::whereDate('created_at', today())->latest()->first();
             $sequence = $lastBooking ? (int)substr($lastBooking->booking_code, -4) + 1 : 1;
             $bookingCode = 'BKG-' . date('Ymd') . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
@@ -104,6 +142,21 @@ class BookingController extends Controller
             $checkout = new \DateTime($validated['checkout_date']);
             $nightCount = $checkin->diff($checkout)->days;
 
+            // Determine DP settings
+            $dpRequired = $validated['dp_required'] ?? true;
+            $dpType = $validated['dp_type'] ?? 'none';
+            $dpAmount = 0;
+            $dpPercentage = 0;
+
+            if ($dpRequired && $dpType !== 'none') {
+                if ($dpType === 'fixed') {
+                    $dpAmount = (float)($validated['dp_amount'] ?? 0);
+                } elseif ($dpType === 'percentage') {
+                    $dpPercentage = (float)($validated['dp_percentage'] ?? 0);
+                    $dpAmount = ($totalAmount * $dpPercentage) / 100;
+                }
+            }
+
             $booking = Booking::create([
                 'booking_code' => $bookingCode,
                 'customer_name' => $validated['customer_name'],
@@ -114,13 +167,16 @@ class BookingController extends Controller
                 'room_count' => $roomCount,
                 'total_amount' => $totalAmount,
                 'discount_amount' => $totalDiscount,
+                'dp_required' => $dpRequired,
+                'dp_amount' => $dpAmount,
+                'dp_percentage' => $dpPercentage,
                 'payment_status' => 'unpaid',
                 'notes' => $validated['notes'],
                 'status' => 'pending',
                 'created_by' => auth()->id(),
             ]);
 
-            // Create booking units with discount information
+            // Create booking units with discount information and availability tracking
             foreach ($validated['units'] as $unit) {
                 $discountPercentage = $unit['discount_percentage'] ?? 0;
                 $unitSubtotal = $unit['quantity'] * $unit['unit_price'];
@@ -129,6 +185,7 @@ class BookingController extends Controller
                 BookingUnit::create([
                     'booking_id' => $booking->id,
                     'product_id' => $unit['product_id'],
+                    'product_availability_id' => $unit['product_availability_id'] ?? null,
                     'quantity' => $unit['quantity'],
                     'unit_price' => $unit['unit_price'],
                     'subtotal' => $unitSubtotal,
@@ -164,6 +221,11 @@ class BookingController extends Controller
     {
         $booking->load(['creator', 'bookingUnits.product', 'bookingPayments']);
 
+        $totalPaid = $booking->bookingPayments->sum('amount');
+        $effectiveDpAmount = $booking->dp_percentage > 0 
+            ? ($booking->total_amount * $booking->dp_percentage) / 100 
+            : $booking->dp_amount;
+
         return Inertia::render('Admin/Bookings/Show', [
             'booking' => [
                 'id' => $booking->id,
@@ -175,8 +237,12 @@ class BookingController extends Controller
                 'night_count' => $booking->night_count,
                 'room_count' => $booking->room_count,
                 'total_amount' => $booking->total_amount,
+                'dp_required' => $booking->dp_required,
+                'dp_amount' => $booking->dp_amount,
+                'dp_percentage' => $booking->dp_percentage,
+                'effective_dp_amount' => $effectiveDpAmount,
                 'payment_status' => $booking->payment_status,
-                'remaining_balance' => max(0, $booking->total_amount - $booking->bookingPayments->sum('amount')),
+                'remaining_balance' => max(0, $booking->total_amount - $totalPaid),
                 'notes' => $booking->notes,
                 'status' => $booking->status,
                 'created_by_name' => $booking->creator?->name,

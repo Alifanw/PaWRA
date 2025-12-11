@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,13 +30,34 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request): RedirectResponse|JsonResponse|HttpResponse
     {
         $request->authenticate();
-
+        
+        // Regenerate session for security
         $request->session()->regenerate();
+        
+        // Get the authenticated user
+        $user = auth()->user();
+        
+        // Explicitly store user data in session
+        $request->session()->put('user_id', $user->id);
+        $request->session()->put('user_name', $user->username);
+        $request->session()->put('user_full_name', $user->full_name ?? $user->name);
+        
+        // Save session to database immediately
+        $request->session()->save();
 
-        return redirect()->intended(route('admin.dashboard', absolute: false));
+        $dashboardPath = '/admin/dashboard';
+
+        Log::info('Auth: Login successful, session created and persisted', [
+            'user_id' => $user->id,
+            'username' => $user->username,
+            'session_id' => session()->getId(),
+        ]);
+
+        // Return HTTP 302 redirect (standard redirect response)
+        return redirect($dashboardPath);
     }
 
     /**

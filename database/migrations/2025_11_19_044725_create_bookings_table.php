@@ -36,10 +36,12 @@ return new class extends Migration
             $table->foreign('updated_by')->references('id')->on('users');
         });
 
-        DB::statement("
-            ALTER TABLE bookings
-            ADD CONSTRAINT chk_booking_dates CHECK (checkout > checkin)
-        ");
+        // SQLite does not support ALTER TABLE ... ADD CONSTRAINT in the same
+        // way as MySQL/Postgres. When running tests with the sqlite in-memory
+        // driver, skip adding the check constraint to avoid SQL errors.
+        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE bookings ADD CONSTRAINT chk_booking_dates CHECK (checkout > checkin)");
+        }
     }
 
     public function down(): void

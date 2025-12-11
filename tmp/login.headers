@@ -1,0 +1,10 @@
+HTTP/1.1 200 OK
+Date: Tue, 09 Dec 2025 01:26:19 GMT
+Server: Apache/2.4.58 (Ubuntu)
+Cache-Control: no-cache, private
+Vary: X-Inertia,Origin,Accept-Encoding
+Set-Cookie: XSRF-TOKEN=eyJpdiI6IkFlNCt6SXdJcVR2TW00RU55ZHZwR0E9PSIsInZhbHVlIjoidHlJVXBLZGdMQzVYckN0VUYwMkpxWTB2L3MxNlFGb1lTS0o1WUdJcmltSUxDbVRZUUt1RVRLWDhpSlREVEIzVlEzRDVNeFg1UkJTdnltNDBJTEpJSzVmSTVpWE1razVDWktJNHR0cTV6eUdQZVZITlp0YWRnUVVmNThVdGxGQ2UiLCJtYWMiOiJiZDhhZmQ3YjViYzliY2U3ZDU5MzM5NzlmYTJkNGUzNWU1YTlhMjE5MjQwODA0Nzk1YjQ2NGEzOWE1OWI2ZmUxIiwidGFnIjoiIn0%3D; expires=Tue, 09 Dec 2025 03:26:19 GMT; Max-Age=7200; path=/; domain=.serverdata.asia; samesite=lax
+Set-Cookie: laravel-session=eyJpdiI6InBDS2FaS0JXbG1VaHB2N1JDaUZLbFE9PSIsInZhbHVlIjoiVnJoRVJMemZDUUFLQmpUb3ZhaUViMy9zYUVOZml1RUlRbHJhN0dOMVNMdjhNRktXUnJzVGFXdU4rQ0M5NnFDOG9ndEtuMDRiS3NLMURWZ0RxZDZlcVFXWDJVOVlCd2ZZcTNUcGJEMWRqdGtNNUVSMVVDQTdjUmdvaTRCeDU5Q2IiLCJtYWMiOiJjOTkwZGExYmQwYjY0NDUwMGFiYThiZmFjZGE5Y2Q5ZWU3MmY4YTljZDczOTBlYjMyMDBkZGMxZjg2ZWJmZWU0IiwidGFnIjoiIn0%3D; expires=Tue, 09 Dec 2025 03:26:19 GMT; Max-Age=7200; path=/; domain=.serverdata.asia; httponly; samesite=lax
+Transfer-Encoding: chunked
+Content-Type: text/html; charset=UTF-8
+

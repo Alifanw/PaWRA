@@ -50,4 +50,12 @@ class Product extends Model
     {
         return $this->hasMany(TicketSaleItem::class);
     }
+
+    /**
+     * Get the availability units for the product.
+     */
+    public function availabilityUnits()
+    {
+        return $this->hasMany(ProductAvailability::class, 'product_id');
+    }
 }

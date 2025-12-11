@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Login</title>
+</head>
+<body>
+    <h1>Test Login Form</h1>
+    <form id="loginForm">
+        <input type="email" name="email" value="admin@airpanas.local" required>
+        <input type="password" name="password" value="Admin123!" required>
+        <button type="submit">Login</button>
+    </form>
+    
+    <div id="status"></div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const status = document.getElementById('status');
+            status.innerHTML = '<p>Logging in...</p>';
+            
+            try {
+                // Get CSRF token
+                const loginPageRes = await fetch('/login');
+                const loginPageHtml = await loginPageRes.text();
+                const match = loginPageHtml.match(/data-page="([^"]*)/);
+                if (!match) {
+                    status.innerHTML = '<p style="color:red">Failed to extract CSRF</p>';
+                    return;
+                }
+                
+                const pageData = decodeURIComponent(match[1])
+                    .replace(/&quot;/g, '"')
+                    .replace(/&amp;/g, '&');
+                const pageJson = JSON.parse(pageData);
+                const csrf = pageJson.props.csrf_token;
+                
+                status.innerHTML = `<p>CSRF: ${csrf.substring(0, 20)}...</p>`;
+                
+                // POST login
+                const loginRes = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'X-XSRF-TOKEN': csrf,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        email: 'admin@airpanas.local',
+                        password: 'Admin123!'
+                    }),
+                    redirect: 'manual'
+                });
+                
+                status.innerHTML += `<p>Login Response: ${loginRes.status}</p>`;
+                if (loginRes.status === 302) {
+                    status.innerHTML += '<p>✓ Got 302 redirect, attempting dashboard...</p>';
+                    
+                    // Follow to dashboard
+                    const dashRes = await fetch('/admin/dashboard');
+                    status.innerHTML += `<p>Dashboard: ${dashRes.status}</p>`;
+                    
+                    if (dashRes.status === 200) {
+                        status.innerHTML += '<p style="color:green"><strong>✓ SUCCESS! Logged in and dashboard accessible!</strong></p>';
+                    } else {
+                        status.innerHTML += '<p style="color:red">Dashboard returned non-200 status</p>';
+                    }
+                }
+            } catch (err) {
+                status.innerHTML = `<p style="color:red">Error: ${err.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

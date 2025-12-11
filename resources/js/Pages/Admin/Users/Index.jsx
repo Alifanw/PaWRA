@@ -88,8 +88,8 @@ export default function UserIndex({ auth, users, roles, filters }) {
             </div>
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4 mb-6 border border-slate-200 dark:border-slate-700">
                 <div className="grid grid-cols-2 gap-4">
-                    <input type="text" defaultValue={filters?.search} onChange={(e) => router.get(route('admin.users.index'), {...filters, search: e.target.value}, {preserveState:true,replace:true})} placeholder="Search..." className="rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" />
-                    <select defaultValue={filters?.role_id || ''} onChange={(e) => router.get(route('admin.users.index'), {...filters, role_id: e.target.value}, {preserveState:true,replace:true})} className="rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
+                    <input id="search" type="text" name="search" defaultValue={filters?.search} onChange={(e) => router.get(route('admin.users.index'), {...filters, search: e.target.value}, {preserveState:true,replace:true})} placeholder="Search..." className="rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100" />
+                    <select id="role_filter" name="role_id" defaultValue={filters?.role_id || ''} onChange={(e) => router.get(route('admin.users.index'), {...filters, role_id: e.target.value}, {preserveState:true,replace:true})} className="rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
                         <option value="">All Roles</option>
                         {roles?.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                     </select>
@@ -99,19 +99,19 @@ export default function UserIndex({ auth, users, roles, filters }) {
             <Modal show={showModal} onClose={closeModal} maxWidth="2xl">
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{editingUser ? 'Edit' : 'Add'} User</h2>
-                    <input type="text" value={data.name} onChange={e => setData('name', e.target.value)} placeholder="Name" className="w-full rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600" required />
+                    <input id="name" type="text" name="name" value={data.name} onChange={e => setData('name', e.target.value)} placeholder="Name" className="w-full rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600" required />
                     <div className="grid grid-cols-2 gap-4">
-                        <input type="text" value={data.username} onChange={e => setData('username', e.target.value)} placeholder="Username" className="rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600" required />
-                        <input type="email" value={data.email} onChange={e => setData('email', e.target.value)} placeholder="Email" className="rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600" required />
+                        <input id="username" type="text" name="username" value={data.username} onChange={e => setData('username', e.target.value)} placeholder="Username" className="rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600" required />
+                        <input id="email" type="email" name="email" value={data.email} onChange={e => setData('email', e.target.value)} placeholder="Email" className="rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600" required />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                        <input type="password" value={data.password} onChange={e => setData('password', e.target.value)} placeholder={editingUser ? 'New Password (optional)' : 'Password'} className="rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600" required={!editingUser} minLength="8" />
-                        <select value={data.role_id} onChange={e => setData('role_id', e.target.value)} className="rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600" required>
+                        <input id="password" type="password" name="password" value={data.password} onChange={e => setData('password', e.target.value)} placeholder={editingUser ? 'New Password (optional)' : 'Password'} className="rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600" required={!editingUser} minLength="8" />
+                        <select id="role_id" name="role_id" value={data.role_id} onChange={e => setData('role_id', e.target.value)} className="rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600" required>
                             <option value="">Select Role</option>
                             {roles?.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                         </select>
                     </div>
-                    <label className="flex items-center"><input type="checkbox" checked={data.is_active} onChange={e => setData('is_active', e.target.checked)} className="rounded dark:bg-slate-700 dark:border-slate-600" /> <span className="ml-2 dark:text-slate-100">Active</span></label>
+                    <label className="flex items-center"><input id="is_active" type="checkbox" name="is_active" checked={data.is_active} onChange={e => setData('is_active', e.target.checked)} className="rounded dark:bg-slate-700 dark:border-slate-600" /> <span className="ml-2 dark:text-slate-100">Active</span></label>
                     <div className="flex justify-end space-x-3 pt-4">
                         <button type="button" onClick={closeModal} className="px-4 py-2 border border-slate-300 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 dark:border-slate-600">Cancel</button>
                         <button type="submit" disabled={processing} className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50">{processing ? 'Saving...' : (editingUser ? 'Update' : 'Create')}</button>

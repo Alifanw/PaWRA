@@ -9,11 +9,14 @@ class BookingUnit extends Model
     protected $fillable = [
         'booking_id',
         'product_id',
+        'product_availability_id',
         'quantity',
         'unit_price',
         'subtotal',
         'discount_percentage',
         'discount_amount',
+        'unit_locked',
+        'unit_notes',
     ];
 
     protected $casts = [
@@ -21,6 +24,7 @@ class BookingUnit extends Model
         'subtotal' => 'decimal:2',
         'discount_percentage' => 'decimal:2',
         'discount_amount' => 'decimal:2',
+        'unit_locked' => 'boolean',
     ];
 
     /**
@@ -37,6 +41,14 @@ class BookingUnit extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /**
+     * Get the product availability for this booking unit.
+     */
+    public function availability()
+    {
+        return $this->belongsTo(ProductAvailability::class, 'product_availability_id');
     }
 
     /**
@@ -59,5 +71,33 @@ class BookingUnit extends Model
         if ($this->unit_price && $this->quantity) {
             $this->attributes['discount_amount'] = ($this->unit_price * $this->quantity) * ($value / 100);
         }
+    }
+
+    /**
+     * Get the status of this unit (available, booked, pending, locked)
+     */
+    public function getStatusAttribute(): string
+    {
+        if ($this->unit_locked) {
+            return 'locked';
+        }
+
+        if ($this->booking->status === 'cancelled') {
+            return 'cancelled';
+        }
+
+        if (in_array($this->booking->status, ['confirmed', 'checked_in', 'checked_out'])) {
+            return 'booked';
+        }
+
+        return 'pending';
+    }
+
+    /**
+     * Check if this specific unit is available for modification
+     */
+    public function isAvailableForModificationAttribute(): bool
+    {
+        return !$this->unit_locked && $this->booking->status === 'pending';
     }
 }

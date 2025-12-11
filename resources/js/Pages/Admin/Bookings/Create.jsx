@@ -1,6 +1,7 @@
 import { useForm, router, Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import AvailabilitySelector from '@/Components/AvailabilitySelector';
 import toast from 'react-hot-toast';
 
 export default function Create({ auth, products }) {
@@ -10,6 +11,10 @@ export default function Create({ auth, products }) {
         checkin_date: '',
         checkout_date: '',
         notes: '',
+        dp_required: true,
+        dp_type: 'none',
+        dp_amount: '',
+        dp_percentage: '',
         units: [],
     });
 
@@ -18,6 +23,7 @@ export default function Create({ auth, products }) {
             ...data.units,
             {
                 product_id: '',
+                product_availability_id: null,
                 quantity: 1,
                 unit_price: 0,
                 discount_percentage: '', // diskon (%) boleh kosong
@@ -204,7 +210,92 @@ export default function Create({ auth, products }) {
                         {/* Products */}
                         <div className="bg-white dark:bg-slate-800 shadow rounded-lg p-6">
                             <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-lg font-medium text-slate-900 dark:text-slate-100">Products</h2>
+                                <h2 className="text-lg font-medium text-slate-900 dark:text-slate-100">Deposit (DP) Settings</h2>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.dp_required}
+                                            onChange={e => setData('dp_required', e.target.checked)}
+                                            className="rounded border-slate-300 dark:bg-slate-700 dark:border-slate-600"
+                                        />
+                                        <span className="ml-2">Require Deposit (DP)</span>
+                                    </label>
+                                </div>
+
+                                {data.dp_required && (
+                                    <div>
+                                        <label htmlFor="dp-type" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            DP Type
+                                        </label>
+                                        <select
+                                            id="dp-type"
+                                            value={data.dp_type}
+                                            onChange={e => setData('dp_type', e.target.value)}
+                                            className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
+                                        >
+                                            <option value="none">No DP</option>
+                                            <option value="fixed">Fixed Amount</option>
+                                            <option value="percentage">Percentage</option>
+                                        </select>
+                                    </div>
+                                )}
+
+                                {data.dp_required && data.dp_type === 'fixed' && (
+                                    <div>
+                                        <label htmlFor="dp-amount" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            DP Amount (Rp)
+                                        </label>
+                                        <input
+                                            id="dp-amount"
+                                            type="number"
+                                            value={data.dp_amount}
+                                            onChange={e => setData('dp_amount', e.target.value)}
+                                            min="0"
+                                            step="10000"
+                                            className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                )}
+
+                                {data.dp_required && data.dp_type === 'percentage' && (
+                                    <div>
+                                        <label htmlFor="dp-percentage" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            DP Percentage (%)
+                                        </label>
+                                        <input
+                                            id="dp-percentage"
+                                            type="number"
+                                            value={data.dp_percentage}
+                                            onChange={e => setData('dp_percentage', e.target.value)}
+                                            min="0"
+                                            max="100"
+                                            step="0.1"
+                                            className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                )}
+
+                                {data.dp_required && data.dp_type === 'percentage' && calculateTotal() > 0 && (
+                                    <div className="text-sm text-slate-600 dark:text-slate-400 pt-8">
+                                        DP Amount: Rp {(calculateTotal() * (Number(data.dp_percentage) || 0) / 100).toLocaleString('id-ID')}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Products */}
+                        <div className="bg-white dark:bg-slate-800 shadow rounded-lg p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <div>
+                                    <h2 className="text-lg font-medium text-slate-900 dark:text-slate-100">Products & Availability</h2>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Select rooms/units for your booking</p>
+                                </div>
                                 <button
                                     type="button"
                                     onClick={addUnit}
@@ -215,104 +306,141 @@ export default function Create({ auth, products }) {
                                 </button>
                             </div>
 
+                            {/* Booking Summary */}
+                            {data.checkin_date && data.checkout_date && (
+                                <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900 dark:bg-opacity-20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                    <p className="text-sm text-blue-900 dark:text-blue-200">
+                                        <strong>Booking Period:</strong> {new Date(data.checkin_date).toLocaleDateString('id-ID')} - {new Date(data.checkout_date).toLocaleDateString('id-ID')} 
+                                        ({Math.ceil((new Date(data.checkout_date) - new Date(data.checkin_date)) / (1000 * 60 * 60 * 24))} nights)
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="space-y-3">
                                 {data.units.map((unit, index) => (
-                                    <div key={index} className="flex gap-3 items-start">
+                                    <div key={index} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-3 hover:border-slate-300 dark:hover:border-slate-600 transition">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                            {/* Product */}
+                                            <div>
+                                                <label htmlFor={`unit-${index}-product`} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                                    Product <span className="text-red-500">*</span>
+                                                </label>
+                                                <select
+                                                    id={`unit-${index}-product`}
+                                                    name={`units[${index}][product_id]`}
+                                                    value={unit.product_id}
+                                                    onChange={e => updateUnit(index, 'product_id', e.target.value)}
+                                                    className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
+                                                    required
+                                                >
+                                                    <option value="">Select Product</option>
+                                                    {products?.map(product => (
+                                                        <option key={product.id} value={product.id}>
+                                                            {product.name} - Rp {Number(product.base_price).toLocaleString('id-ID')}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
 
-                                        {/* Product */}
-                                        <div className="flex-1">
-                                            <select
-                                                id={`unit-${index}-product`}
-                                                name={`units[${index}][product_id]`}
-                                                value={unit.product_id}
-                                                onChange={e => updateUnit(index, 'product_id', e.target.value)}
-                                                className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
-                                                required
+                                            {/* Qty */}
+                                            <div>
+                                                <label htmlFor={`unit-${index}-quantity`} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                                    Quantity <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    id={`unit-${index}-quantity`}
+                                                    name={`units[${index}][quantity]`}
+                                                    type="number"
+                                                    value={unit.quantity}
+                                                    onChange={e => updateUnit(index, 'quantity', parseInt(e.target.value) || 1)}
+                                                    min="1"
+                                                    className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
+                                                    required
+                                                />
+                                            </div>
+
+                                            {/* Price */}
+                                            <div>
+                                                <label htmlFor={`unit-${index}-unit_price`} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                                    Unit Price (Rp) <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    id={`unit-${index}-unit_price`}
+                                                    name={`units[${index}][unit_price]`}
+                                                    type="number"
+                                                    value={unit.unit_price}
+                                                    onChange={e => updateUnit(index, 'unit_price', parseFloat(e.target.value) || 0)}
+                                                    min="0"
+                                                    step="1000"
+                                                    className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                            {/* Availability Selector (optional) */}
+                                            <div className="md:col-span-2">
+                                                <AvailabilitySelector 
+                                                    productId={unit.product_id ? Number(unit.product_id) : null}
+                                                    checkinDate={data.checkin_date}
+                                                    checkoutDate={data.checkout_date}
+                                                    value={unit.product_availability_id}
+                                                    onChange={(val) => updateUnit(index, 'product_availability_id', val)}
+                                                    label="Select Unit/Room Availability"
+                                                />
+                                            </div>
+
+                                            {/* Discount (%) */}
+                                            <div>
+                                                <label htmlFor={`unit-${index}-discount`} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                                    Discount (%)
+                                                </label>
+                                                <input
+                                                    id={`unit-${index}-discount`}
+                                                    name={`units[${index}][discount_percentage]`}
+                                                    type="number"
+                                                    value={unit.discount_percentage === '' ? '' : unit.discount_percentage}
+                                                    onChange={e => {
+                                                        const raw = e.target.value;
+                                                        if (raw === '') {
+                                                            updateUnit(index, 'discount_percentage', '');
+                                                            return;
+                                                        }
+                                                        const num = parseFloat(raw);
+                                                        if (!isNaN(num) && num >= 0 && num <= 100) {
+                                                            updateUnit(index, 'discount_percentage', num);
+                                                        }
+                                                    }}
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.1"
+                                                    placeholder="0"
+                                                    className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Subtotal and Remove Button */}
+                                        <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-700">
+                                            <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                                Subtotal: {(() => {
+                                                    const qty = Number(unit.quantity) || 0;
+                                                    const price = Number(unit.unit_price) || 0;
+                                                    const d = unit.discount_percentage === '' ? 0 : Number(unit.discount_percentage) || 0;
+                                                    const subtotal = qty * price - (qty * price * d / 100);
+                                                    return `Rp ${subtotal.toLocaleString('id-ID')}`;
+                                                })()}
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => removeUnit(index)}
+                                                className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-100 dark:hover:bg-red-900/30"
                                             >
-                                                <option value="">Select Product</option>
-                                                {products?.map(product => (
-                                                    <option key={product.id} value={product.id}>
-                                                        {product.name} - Rp {Number(product.base_price).toLocaleString('id-ID')}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                                <TrashIcon className="h-5 w-5" />
+                                            </button>
                                         </div>
-
-                                        {/* Qty */}
-                                        <div className="w-20">
-                                            <input
-                                                id={`unit-${index}-quantity`}
-                                                name={`units[${index}][quantity]`}
-                                                type="number"
-                                                value={unit.quantity}
-                                                onChange={e => updateUnit(index, 'quantity', parseInt(e.target.value) || 1)}
-                                                min="1"
-                                                className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
-                                                required
-                                            />
-                                        </div>
-
-                                        {/* Price */}
-                                        <div className="w-28">
-                                            <input
-                                                id={`unit-${index}-unit_price`}
-                                                name={`units[${index}][unit_price]`}
-                                                type="number"
-                                                value={unit.unit_price}
-                                                onChange={e => updateUnit(index, 'unit_price', parseFloat(e.target.value) || 0)}
-                                                min="0"
-                                                step="1000"
-                                                className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
-                                                required
-                                            />
-                                        </div>
-
-                                        {/* Discount (%) */}
-                                        <div className="w-24">
-                                            <input
-                                                id={`unit-${index}-discount`}
-                                                name={`units[${index}][discount_percentage]`}
-                                                type="number"
-                                                value={unit.discount_percentage === '' ? '' : unit.discount_percentage}
-                                                onChange={e => {
-                                                    const raw = e.target.value;
-                                                    if (raw === '') {
-                                                        updateUnit(index, 'discount_percentage', '');
-                                                        return;
-                                                    }
-                                                    const num = parseFloat(raw);
-                                                    if (!isNaN(num) && num >= 0 && num <= 100) {
-                                                        updateUnit(index, 'discount_percentage', num);
-                                                    }
-                                                }}
-                                                min="0"
-                                                max="100"
-                                                step="0.1"
-                                                placeholder="Disc %"
-                                                className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
-                                            />
-                                        </div>
-
-                                        {/* Subtotal */}
-                                        <div className="w-32 text-right pt-2">
-                                            {(() => {
-                                                const qty = Number(unit.quantity) || 0;
-                                                const price = Number(unit.unit_price) || 0;
-                                                const d = unit.discount_percentage === '' ? 0 : Number(unit.discount_percentage) || 0;
-                                                const subtotal = qty * price - (qty * price * d / 100);
-                                                return `Rp ${subtotal.toLocaleString('id-ID')}`;
-                                            })()}
-                                        </div>
-
-                                        {/* Remove */}
-                                        <button
-                                            type="button"
-                                            onClick={() => removeUnit(index)}
-                                            className="text-red-600 hover:text-red-900 p-2"
-                                        >
-                                            <TrashIcon className="h-5 w-5" />
-                                        </button>
-
                                     </div>
                                 ))}
                             </div>

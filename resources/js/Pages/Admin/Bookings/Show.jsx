@@ -112,10 +112,24 @@ export default function Show({ auth, booking }) {
               ))}
             </tbody>
           </table>
-          <div className="mt-4 text-right">
-            <div className="font-medium">Total: Rp {Number(booking?.total_amount || 0).toLocaleString('id-ID')}</div>
-            <div className="text-sm text-slate-600">Status Pembayaran: {booking?.payment_status ?? '-'}</div>
-            <div className="text-sm font-semibold">Sisa: Rp {Number(booking?.remaining_balance || 0).toLocaleString('id-ID')}</div>
+          <div className="mt-4 space-y-2 pt-4 border-t">
+            <div className="flex justify-between">
+              <span>Total</span>
+              <span className="font-medium">Rp {Number(booking?.total_amount || 0).toLocaleString('id-ID')}</span>
+            </div>
+            {booking?.dp_required && (
+              <div className="flex justify-between text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900 bg-opacity-30 p-2 rounded">
+                <span>DP Required</span>
+                <span className="font-medium">Rp {Number(booking?.effective_dp_amount || 0).toLocaleString('id-ID')}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-semibold text-lg">
+              <span>Sisa Pembayaran</span>
+              <span>Rp {Number(booking?.remaining_balance || 0).toLocaleString('id-ID')}</span>
+            </div>
+            <div className="text-sm text-slate-600 dark:text-slate-400">
+              Status: <span className="font-medium">{booking?.payment_status ?? '-'}</span>
+            </div>
           </div>
         </div>
 

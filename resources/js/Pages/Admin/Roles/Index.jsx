@@ -74,14 +74,14 @@ export default function RoleIndex({ auth, roles, filters, availablePermissions }
             <Modal show={showModal} onClose={closeModal} maxWidth="3xl">
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <h2 className="text-xl font-semibold dark:text-slate-100">{editingRole ? 'Edit' : 'Add'} Role</h2>
-                    <input type="text" value={data.name} onChange={e => setData('name', e.target.value)} placeholder="Role Name" className="w-full rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600" required />
-                    <textarea value={data.description} onChange={e => setData('description', e.target.value)} placeholder="Description" className="w-full rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600" rows={2} />
+                    <input id="role_name" type="text" name="name" value={data.name} onChange={e => setData('name', e.target.value)} placeholder="Role Name" className="w-full rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600" required />
+                    <textarea id="description" name="description" value={data.description} onChange={e => setData('description', e.target.value)} placeholder="Description" className="w-full rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600" rows={2} />
                     <div>
                         <label className="block text-sm font-medium mb-2 dark:text-slate-100">Permissions</label>
                         <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto border rounded p-3 border-slate-300 dark:border-slate-600 dark:bg-slate-700">
                             {availablePermissions?.map(perm => (
                                 <label key={perm} className="flex items-center">
-                                    <input type="checkbox" checked={data.permissions.includes(perm)} onChange={() => togglePermission(perm)} className="rounded" />
+                                    <input id={`perm_${perm}`} type="checkbox" name={`permission_${perm}`} checked={data.permissions.includes(perm)} onChange={() => togglePermission(perm)} className="rounded" />
                                     <span className="ml-2 text-sm">{perm}</span>
                                 </label>
                             ))}

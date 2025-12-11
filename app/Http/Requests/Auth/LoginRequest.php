@@ -5,6 +5,7 @@ namespace App\Http\Requests\Auth;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -41,15 +42,34 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('username', 'password'), $this->boolean('remember'))) {
+        $username = $this->input('username');
+        $password = $this->input('password');
+        $remember = $this->boolean('remember');
+
+        Log::debug('LoginRequest: Attempting authentication', [
+            'username' => $username,
+            'remember' => $remember,
+        ]);
+
+        if (! Auth::attempt(['username' => $username, 'password' => $password], $remember)) {
             RateLimiter::hit($this->throttleKey());
 
+            Log::warning('LoginRequest: Authentication failed', [
+                'username' => $username,
+                'reason' => 'Invalid credentials',
+            ]);
+
             throw ValidationException::withMessages([
-                'username' => trans('auth.failed'),
+                'username' => 'Username atau password yang Anda masukkan salah. Silakan coba lagi.',
             ]);
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        Log::info('LoginRequest: Authentication successful', [
+            'user_id' => Auth::id(),
+            'username' => $username,
+        ]);
     }
 
     /**
@@ -67,11 +87,13 @@ class LoginRequest extends FormRequest
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
+        Log::warning('LoginRequest: Rate limited', [
+            'username' => $this->input('username'),
+            'seconds_remaining' => $seconds,
+        ]);
+
         throw ValidationException::withMessages([
-            'username' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
+            'username' => 'Terlalu banyak percobaan login. Coba lagi dalam ' . ceil($seconds / 60) . ' menit.',
         ]);
     }
 
@@ -80,6 +102,8 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('username')).'|'.$this->ip());
+        $username = (string) $this->input('username');
+
+        return Str::transliterate(Str::lower($username) . '|' . $this->ip());
     }
 }

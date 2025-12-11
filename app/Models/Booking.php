@@ -17,6 +17,8 @@ class Booking extends Model
         'status',
         'payment_status',
         'dp_amount',
+        'dp_required',
+        'dp_percentage',
         'total_amount',
         'discount_amount',
         'notes',
@@ -28,6 +30,8 @@ class Booking extends Model
         'checkin' => 'datetime',
         'checkout' => 'datetime',
         'dp_amount' => 'decimal:2',
+        'dp_percentage' => 'decimal:2',
+        'dp_required' => 'boolean',
         'total_amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'payment_status' => 'string',
@@ -74,16 +78,15 @@ class Booking extends Model
     }
 
     /**
-     * Calculate total amount from booking units (subtotal - discount).
-     * Sum all unit subtotals and subtract discounts.
-     * 
-     * @return float Total price for all units after discounts
+     * Get the effective DP amount for this booking
+     * If dp_percentage is set, calculate from total_amount; otherwise use dp_amount
      */
-    public function getTotalAmountCalculatedAttribute(): float
+    public function getEffectiveDpAmountAttribute(): float
     {
-        return $this->bookingUnits()
-            ->sum(\DB::raw('(unit_price * quantity) - discount_amount'))
-            ?? 0;
+        if ($this->dp_percentage > 0) {
+            return ($this->total_amount * $this->dp_percentage) / 100;
+        }
+        return $this->dp_amount ?? 0;
     }
 
     /**
@@ -104,6 +107,36 @@ class Booking extends Model
     public function getBalanceAttribute(): float
     {
         return max(0, $this->total_amount - $this->total_paid);
+    }
+
+    /**
+     * Get the remaining DP amount to be paid (if DP is required)
+     */
+    public function getRemainingDpAttribute(): float
+    {
+        if (!$this->dp_required) {
+            return 0;
+        }
+        
+        $effectiveDp = $this->effective_dp_amount;
+        $dpPaid = $this->bookingPayments()->sum('amount') ?? 0;
+        
+        return max(0, $effectiveDp - $dpPaid);
+    }
+
+    /**
+     * Check if DP requirement is satisfied
+     */
+    public function isDpSatisfiedAttribute(): bool
+    {
+        if (!$this->dp_required) {
+            return true;
+        }
+        
+        $effectiveDp = $this->effective_dp_amount;
+        $dpPaid = $this->bookingPayments()->sum('amount') ?? 0;
+        
+        return $dpPaid >= $effectiveDp;
     }
 
     /**

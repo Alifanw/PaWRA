@@ -34,6 +34,10 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'csrf_token' => csrf_token(),
+            'ziggy' => fn() => [
+                'location' => \Illuminate\Support\Facades\Route::current()?->uri ?? '',
+            ],
         ];
     }
 }

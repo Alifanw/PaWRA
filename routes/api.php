@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\AvailabilityController;
 use App\Http\Controllers\Api\TicketSaleController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\RoleController;
@@ -20,6 +21,13 @@ use App\Http\Controllers\AttendanceController;
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])
         ->middleware('throttle:5,1'); // 5 attempts per minute
+});
+
+// Public availability endpoints (untuk booking form)
+Route::prefix('availabilities')->group(function () {
+    Route::get('/', [AvailabilityController::class, 'getByProduct']);
+    Route::get('/product/{productId}', [AvailabilityController::class, 'getAllByProduct']);
+    Route::get('/calendar', [AvailabilityController::class, 'getCalendar']);
 });
 
 // Protected routes
@@ -43,6 +51,16 @@ Route::middleware('auth:sanctum')->group(function () {
     // Products & Categories
     Route::middleware('permission:products.manage,products.view')->group(function () {
         Route::apiResource('products', ProductController::class);
+    });
+
+    // Product Availability
+    Route::middleware('permission:products.manage,products.view')->group(function () {
+        Route::get('availabilities', [AvailabilityController::class, 'getByProduct']);
+        Route::get('availabilities/product/{productId}', [AvailabilityController::class, 'getAllByProduct']);
+        Route::get('availabilities/calendar', [AvailabilityController::class, 'getCalendar']);
+        Route::post('availabilities', [AvailabilityController::class, 'store']);
+        Route::put('availabilities/{availability}', [AvailabilityController::class, 'update']);
+        Route::delete('availabilities/{availability}', [AvailabilityController::class, 'destroy']);
     });
 
     // Bookings

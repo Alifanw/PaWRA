@@ -15,22 +15,42 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'register'],
 
     'allowed_methods' => ['*'],
 
     'allowed_origins' => array_filter([
         env('APP_URL', 'http://localhost'),
         env('FRONTEND_URL'),
+        'http://localhost',
+        'http://localhost:3000',
+        'http://localhost:8000',
+        'http://127.0.0.1',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:8000',
     ]),
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '#^.*\.serverdata\.asia$#',
+        '#^.*\.localhost$#',
+    ],
 
-    'allowed_headers' => ['*'],
+    'allowed_headers' => [
+        'Accept',
+        'Content-Type',
+        'X-CSRF-Token',
+        'Authorization',
+        'X-Requested-With',
+        'X-API-KEY',
+    ],
 
-    'exposed_headers' => [],
+    'exposed_headers' => [
+        'Content-Disposition',
+        'X-Total-Count',
+        'X-Page-Count',
+    ],
 
-    'max_age' => 0,
+    'max_age' => 86400,
 
     'supports_credentials' => true,
 

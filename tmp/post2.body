@@ -1,0 +1,11 @@
+HTTP/1.1 422 Unprocessable Content
+Date: Tue, 09 Dec 2025 01:28:55 GMT
+Server: Apache/2.4.58 (Ubuntu)
+Cache-Control: no-cache, private
+Vary: X-Inertia,Origin
+Set-Cookie: XSRF-TOKEN=eyJpdiI6ImJPekhsUGpvVVdkOWY2TWx1dHhCblE9PSIsInZhbHVlIjoiVmcwSFZwMnVOTWRGajhRSTV6emJTQUllaG04U0tUQVoyZHhHNUhySjFKV0V4b05Hd25KNEZrZVRjR2VDazBsazM4Sm8zN25xSHBPQzVXdmErdjBzeG9ib2ovRVIrMnEwTkJtOHJjVkpEcDc0ZWthUXZpV2FkTFFiUUhhYjdOazUiLCJtYWMiOiI1OTdkMWM1NzQ4ZWY2ZWIzNjhmOWNmNTBmYWRmZTg0ZmFmYjJlMjA5YTBjNTQ5NWFkYmRjMWY1ZmIxM2EzZmUxIiwidGFnIjoiIn0%3D; expires=Tue, 09 Dec 2025 03:28:56 GMT; Max-Age=7200; path=/; domain=.serverdata.asia; samesite=lax
+Set-Cookie: laravel-session=eyJpdiI6IjhFWDhrSGlXWmxUK09MVThDV3l6OXc9PSIsInZhbHVlIjoibEJtNnZIZEhodkE2bHFpSkhWZU1jMm5rQzNXOUJvbWJaSkRUWHlVa3d1QjR5MHd5OEhoR0huaHI4eGYzRVZ4cU5OS2xPVVZEck9yQjgrRHFpTFRKSEFPL3VHSUhxSzl2THVNRlVWcVZPd1BwOFp4UXVpdU82NnRaVk9HUWZxZWMiLCJtYWMiOiI5ZDMyNDVlZmJlNTFlZDM5NWVjN2E1NTgwMDY0Mzg3ZWMwYzFmNzhjN2RkN2ZhZTkyNTQ4NzFiNjIwNDMyN2Y5IiwidGFnIjoiIn0%3D; expires=Tue, 09 Dec 2025 03:28:56 GMT; Max-Age=7200; path=/; domain=.serverdata.asia; httponly; samesite=lax
+Transfer-Encoding: chunked
+Content-Type: application/json
+
+{"message":"Username atau password yang Anda masukkan salah. Silakan coba lagi.","errors":{"username":["Username atau password yang Anda masukkan salah. Silakan coba lagi."]}}

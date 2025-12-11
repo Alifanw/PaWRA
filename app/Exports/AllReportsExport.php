@@ -2,8 +2,7 @@
 
 namespace App\Exports;
 
-use Illuminate\Contracts\Collection\LengthAwarePaginator;
-use Illuminate\Collections\Collection;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 

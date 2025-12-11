@@ -52,17 +52,27 @@ class ParkingController extends Controller
             'vehicle_number' => 'nullable|string',
             'vehicle_type' => 'nullable|in:roda2,roda4_6',
             'vehicle_count' => 'nullable|integer|min:1',
-            'total_amount' => 'required|numeric|min:0',
+            'total_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string'
         ]);
+
+        $vehicleType = $data['vehicle_type'] ?? 'roda2';
+        $vehicleCount = $data['vehicle_count'] ?? 1;
+
+        // Calculate total amount from pricing if not provided
+        $totalAmount = $data['total_amount'] ?? 0;
+        if (!$totalAmount || $totalAmount == 0) {
+            $unitPrice = \App\Models\ParkingPrice::calculateFee($vehicleType, 1, true);
+            $totalAmount = $unitPrice * $vehicleCount;
+        }
 
         $tx = ParkingTransaction::create([
             'transaction_code' => strtoupper(\Illuminate\Support\Str::random(8)),
             'user_id' => optional($request->user())->id,
             'vehicle_number' => $data['vehicle_number'] ?? null,
-            'vehicle_type' => $data['vehicle_type'] ?? 'roda2',
-            'vehicle_count' => $data['vehicle_count'] ?? 1,
-            'total_amount' => $data['total_amount'],
+            'vehicle_type' => $vehicleType,
+            'vehicle_count' => $vehicleCount,
+            'total_amount' => $totalAmount,
             'status' => 'completed',
             'notes' => $data['notes'] ?? null,
         ]);
@@ -133,6 +143,8 @@ class ParkingController extends Controller
     {
         $transaction->load('user');
 
+        $unitPrice = \App\Models\ParkingPrice::calculateFee($transaction->vehicle_type ?? 'roda2', 1, true);
+
         return Inertia::render('Admin/Parking/ShowTransaction', [
             'transaction' => [
                 'id' => $transaction->id,
@@ -141,6 +153,7 @@ class ParkingController extends Controller
                 'vehicle_count' => $transaction->vehicle_count,
                 'vehicle_type' => $transaction->vehicle_type ?? 'roda2',
                 'total_amount' => $transaction->total_amount,
+                'unit_price' => $unitPrice,
                 'notes' => $transaction->notes,
                 'status' => $transaction->status,
                 'created_by_name' => $transaction->user?->name ?? '-',

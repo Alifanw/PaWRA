@@ -12,12 +12,30 @@
 
         <!-- Scripts -->
         @routes
-        @viteReactRefresh
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        @if(app()->isLocal())
+            @viteReactRefresh
+        @endif
         {{-- If Inertia didn't include a page component (eg. early error), avoid asking Vite for an "undefined" page file. --}}
-        @if(isset($page['component']) && $page['component'])
-            @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
+        @if(app()->isLocal())
+            @if(isset($page['component']) && $page['component'])
+                @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
+            @else
+                @vite('resources/js/app.jsx')
+            @endif
         @else
-            @vite('resources/js/app.jsx')
+            @php
+                $manifest = json_decode(file_get_contents(public_path('build/manifest.json')), true);
+                $appAssets = $manifest['resources/js/app.jsx'] ?? [];
+            @endphp
+            @if(isset($appAssets['file']))
+                <script type="module" src="{{ asset('build/' . $appAssets['file']) }}"></script>
+            @endif
+            @if(isset($appAssets['css']) && is_array($appAssets['css']))
+                @foreach($appAssets['css'] as $css)
+                    <link rel="stylesheet" href="{{ asset('build/' . $css) }}" />
+                @endforeach
+            @endif
         @endif
         @inertiaHead
         <!-- Hapus link manual ke /resources/css/app.css, sudah di-handle oleh Vite -->

@@ -1,0 +1,21 @@
+HTTP/1.1 302 Found
+Date: Tue, 09 Dec 2025 01:28:34 GMT
+Server: Apache/2.4.58 (Ubuntu)
+Cache-Control: no-cache, private
+Location: https://projectakhir1.serverdata.asia/login
+Vary: X-Inertia,Origin
+Set-Cookie: XSRF-TOKEN=eyJpdiI6InpSRkRVUDV5TmZNWDdSbUJqa0ljTFE9PSIsInZhbHVlIjoiNTU2SkJZUDZ0S3NCbDN0eUtmN3NHVjJSQUxIbW4rYjFIdG4vKzJZaEJXa2lrWVRDQ21HSWNGU3lzYTBuS1hIUHNHOGVtalN1TmJXVUNtdUsvMGNTUVZoM3NOT2hUWnlkcmFqNS93bitnc0lOeXBRRWlvN0d6a0ZmamtvZG9aZUUiLCJtYWMiOiI0MmZlZmFhMjdkNjI4MTMyYTVlY2JkOGY3YWM2NDhhOTUwMDVkOTAyNjFhNTc3Y2IzNWU1ZjE1NDdjZjc3NWYzIiwidGFnIjoiIn0%3D; expires=Tue, 09 Dec 2025 03:28:35 GMT; Max-Age=7200; path=/; domain=.serverdata.asia; samesite=lax
+Set-Cookie: laravel-session=eyJpdiI6IkZNOGJxbHN2QklqUTlwYmdrWDh6emc9PSIsInZhbHVlIjoib3MrRWx4QVFQQWtuSFFYWGJvZnA4cmZ3dUErWGdFRUxpOVZQWEp5ekN0ZEtjc2JLR3UwTitDUnBEYkpISEhUVEgrYUNLNmJmZXVycFZIa3hPRCtjYmFZOXJ4eExyR0tnZUVuYWRxbEgyQkFnYUR2ek9vSG95cXAydGFVYjhXazEiLCJtYWMiOiI5ZTE1OWYyMWQ0ZTA1MDJjYTE5NjI2ZjYwNTI5MDhmYzZlYzI4ZTE0Njg0OWE5NmZkYjVjMDc2NGViMzAyNWJmIiwidGFnIjoiIn0%3D; expires=Tue, 09 Dec 2025 03:28:35 GMT; Max-Age=7200; path=/; domain=.serverdata.asia; httponly; samesite=lax
+Transfer-Encoding: chunked
+Content-Type: text/html; charset=utf-8
+
+HTTP/1.1 200 OK
+Date: Tue, 09 Dec 2025 01:28:35 GMT
+Server: Apache/2.4.58 (Ubuntu)
+Cache-Control: no-cache, private
+Vary: X-Inertia,Origin,Accept-Encoding
+Set-Cookie: XSRF-TOKEN=eyJpdiI6Im9CcjBNUXJJZ1FIYTR0MnJreFBWWnc9PSIsInZhbHVlIjoibTVublZTUVpIekRhWVhqWEJYZkE4YkU5NHl6U2pRRnJuYnhUcTByN0NYcjFaY0VYZUFxSWdMVHk0cm1pOCs1NHBvREUxTWpSdjV4UWRRYXZoc1FlSmxMMFJTM2NoOGdPazBtTy9XTE45QW9wa0F0bUxOOVdVcmpXZ2xYVEo4bEIiLCJtYWMiOiIzOWQyMTAxMzdlNjVkNzkwMTQ2Y2Q2NjRlMTAwZDU0ZDY2MjViOTY1YjE1MjMyNjY5MjZiNGFjYTkwODJmMTM3IiwidGFnIjoiIn0%3D; expires=Tue, 09 Dec 2025 03:28:35 GMT; Max-Age=7200; path=/; domain=.serverdata.asia; samesite=lax
+Set-Cookie: laravel-session=eyJpdiI6IlR2WHhQb0lOdk9aYU00dHVtKzZuTkE9PSIsInZhbHVlIjoiSUVtYWN6Skd2QUQzRGtWU2FGby9CRmVHdTVUNDc4RldldHM3SkVQSTZZRUdWVE1hYjA1dks1VkNwY2FER0JPalh4TmJDcjZ0SStjU1RNTkhKbUdOdlRRanRxOUdxdU5iRFNGcUZCL0Fvd3Uyb3RtaVgranRhQnVDUzU4WVpzejgiLCJtYWMiOiI0ZWMxOTE4OTg4MTg2ZWFjMzYyZjkxMGY5MDM1NWQxNzZmMTkxYmI3NWU3ZGMxMWFjNDZjYjM1OTM1MDc2MTg4IiwidGFnIjoiIn0%3D; expires=Tue, 09 Dec 2025 03:28:35 GMT; Max-Age=7200; path=/; domain=.serverdata.asia; httponly; samesite=lax
+Transfer-Encoding: chunked
+Content-Type: text/html; charset=UTF-8
+

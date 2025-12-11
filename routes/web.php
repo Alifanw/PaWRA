@@ -108,6 +108,11 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
     Route::get('/parking/bookings/{booking}/print', [\App\Http\Controllers\Admin\ParkingController::class, 'printBooking'])->name('parking.bookings.print');
 });
 
+// Convenience route: redirect /dashboard to /admin/dashboard (auth required)
+Route::get('/dashboard', function () {
+    return redirect('/admin/dashboard');
+})->middleware('auth')->name('dashboard');
+
 // Debug route for quick CSV export during development (only when APP_DEBUG true)
 if (config('app.debug')) {
     Route::get('/reports/export-all-debug', [App\Http\Controllers\Admin\ReportController::class, 'exportAll'])->name('reports.export-all-debug');

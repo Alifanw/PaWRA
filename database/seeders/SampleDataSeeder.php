@@ -51,7 +51,7 @@ class SampleDataSeeder extends Seeder
         }
 
         // Add sample bookings
-        $user = DB::table('users')->where('username', 'superadmin')->first();
+        $user = DB::table('users')->where('email', 'admin@airpanas.local')->first();
         
         if ($user) {
             $bookings = [
