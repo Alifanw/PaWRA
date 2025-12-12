@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductPageController;
+use App\Http\Controllers\Admin\ProductCodeController;
 use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\TicketSaleController;
 use App\Http\Controllers\Admin\UserController;
@@ -34,14 +35,24 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
     // Products - Master Data
     Route::get('/products', [ProductPageController::class, 'index'])->name('products.index');
     Route::post('/products', [ProductPageController::class, 'store'])->name('products.store');
+    Route::delete('/products/bulk-delete', [ProductPageController::class, 'bulkDestroy'])->name('products.bulk-delete');
     Route::put('/products/{product}', [ProductPageController::class, 'update'])->name('products.update');
     Route::delete('/products/{product}', [ProductPageController::class, 'destroy'])->name('products.destroy');
 
+    // Product Codes - Physical Units Management
+    Route::get('/product-codes', [ProductCodeController::class, 'index'])->name('product-codes.index');
+    Route::post('/product-codes', [ProductCodeController::class, 'store'])->name('product-codes.store');
+    Route::post('/product-codes/bulk-status', [ProductCodeController::class, 'bulkUpdateStatus'])->name('product-codes.bulk-update-status');
+    Route::delete('/product-codes/bulk-destroy', [ProductCodeController::class, 'bulkDestroy'])->name('product-codes.bulk-destroy');
+    Route::put('/product-codes/{productCode}', [ProductCodeController::class, 'update'])->name('product-codes.update');
+    Route::delete('/product-codes/{productCode}', [ProductCodeController::class, 'destroy'])->name('product-codes.destroy');
+
     // Bookings
-    Route::get('/bookings/{id}/print', [BookingController::class, 'print'])->name('bookings.print');
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
     Route::get('/bookings/create', [BookingController::class, 'create'])->name('bookings.create');
     Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
+    Route::delete('/bookings/bulk-delete', [BookingController::class, 'bulkDestroy'])->name('bookings.bulk-delete');
+    Route::get('/bookings/{id}/print', [BookingController::class, 'print'])->name('bookings.print');
     Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
     Route::post('/bookings/{booking}/payments', [BookingPaymentController::class, 'store'])->name('bookings.payments.store');
     Route::post('/bookings/{booking}/status', [BookingController::class, 'updateStatus'])->name('bookings.updateStatus');
@@ -54,6 +65,7 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
     Route::get('/ticket-sales', [TicketSaleController::class, 'index'])->name('ticket-sales.index');
     Route::get('/ticket-sales/create', [TicketSaleController::class, 'create'])->name('ticket-sales.create');
     Route::post('/ticket-sales', [TicketSaleController::class, 'store'])->name('ticket-sales.store');
+    Route::delete('/ticket-sales/bulk-delete', [TicketSaleController::class, 'bulkDestroy'])->name('ticket-sales.bulk-delete');
     Route::get('/ticket-sales/{ticketSale}', [TicketSaleController::class, 'show'])->name('ticket-sales.show');
     Route::get('/ticket-sales/{ticketSale}/print', [TicketSaleController::class, 'print'])->name('ticket-sales.print');
     Route::post('/ticket-sales/{ticketSale}/pay', [TicketSaleController::class, 'pay'])->name('ticket-sales.pay');
@@ -63,25 +75,32 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
     // Users Management
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
+    Route::delete('/users/bulk-delete', [UserController::class, 'bulkDestroy'])->name('users.bulk-delete');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
     // Roles Management
     Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
     Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
+    Route::delete('/roles/bulk-delete', [RoleController::class, 'bulkDestroy'])->name('roles.bulk-delete');
     Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
     Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
     Route::get('/roles/{role}/permissions', [RoleController::class, 'permissions'])->name('roles.permissions');
 
     // Reports
+    Route::get('/reports/all-transactions', [ReportController::class, 'allTransactions'])->name('reports.all-transactions');
     Route::get('/reports/bookings', [ReportController::class, 'bookings'])->name('reports.bookings');
     Route::get('/reports/ticket-sales', [ReportController::class, 'ticketSales'])->name('reports.ticket-sales');
+    Route::delete('/reports/bulk-delete', [ReportController::class, 'bulkDelete'])->name('reports.bulk-delete');
+    Route::delete('/reports/ticket-sales-bulk-delete', [ReportController::class, 'bulkDeleteTicketSales'])->name('reports.ticket-sales-bulk-delete');
+    Route::delete('/reports/bookings-bulk-delete', [ReportController::class, 'bulkDeleteBookings'])->name('reports.bookings-bulk-delete');
     Route::get('/reports/export-all', [ReportController::class, 'exportAll'])->name('reports.export-all');
     Route::get('/reports/export-all-xlsx', [ReportController::class, 'exportAllXlsx'])->name('reports.export-all-xlsx');
 
     // Audit Logs
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit-logs.show');
+    Route::delete('/audit-logs/bulk-delete', [AuditLogController::class, 'bulkDestroy'])->name('audit-logs.bulk-delete');
 
     // Attendance / Absensi
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
@@ -100,6 +119,7 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function () 
     Route::post('/parking', [\App\Http\Controllers\Admin\ParkingController::class, 'store'])->name('parking.store');
     Route::get('/parking/bookings', [\App\Http\Controllers\Admin\ParkingController::class, 'bookings'])->name('parking.bookings');
     Route::get('/parking/monitor', [\App\Http\Controllers\Admin\ParkingController::class, 'monitor'])->name('parking.monitor');
+    Route::delete('/parking/bulk-delete', [\App\Http\Controllers\Admin\ParkingController::class, 'bulkDestroy'])->name('parking.bulk-delete');
 
     // Detail & print routes
     Route::get('/parking/transactions/{transaction}', [\App\Http\Controllers\Admin\ParkingController::class, 'showTransaction'])->name('parking.transactions.show');

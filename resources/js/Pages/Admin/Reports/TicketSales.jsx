@@ -1,10 +1,37 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
-
+import BulkActionsToolbar from '@/Components/Admin/BulkActionsToolbar';
+import { useBulkSelection } from '@/hooks/useBulkSelection';
 import ReportDateExport from './ReportDateExport';
+import toast from 'react-hot-toast';
 
 export default function TicketSalesReport({ auth, sales, dailySales, summary, filters }) {
+    const [isDeleting, setIsDeleting] = useState(false);
+    const { selectedIds, selectAllChecked, toggleSelection, toggleSelectAll, clearSelection, isSelected } = useBulkSelection();
+
+    const handleDeleteSelected = () => {
+        if (selectedIds.length === 0) {
+            toast.error('No items selected');
+            return;
+        }
+
+        setIsDeleting(true);
+        router.delete(route('admin.reports.ticket-sales-bulk-delete'), 
+            { ids: selectedIds },
+            {
+                onSuccess: () => {
+                    toast.success(`${selectedIds.length} ticket sale(s) deleted successfully`);
+                    clearSelection();
+                    setIsDeleting(false);
+                },
+                onError: (errors) => {
+                    toast.error(errors.error || 'Failed to delete ticket sales');
+                    setIsDeleting(false);
+                }
+            }
+        );
+    };
     return (
         <AdminLayout auth={auth} title="Ticket Sales Reports">
             <div className="mb-6">
@@ -23,10 +50,31 @@ export default function TicketSalesReport({ auth, sales, dailySales, summary, fi
                 <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow"><div className="text-slate-500 dark:text-slate-400 text-sm">Discount</div><div className="text-2xl font-bold text-orange-600 dark:text-orange-400">Rp {Number(summary.total_discount).toLocaleString('id-ID')}</div></div>
                 <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow"><div className="text-slate-500 dark:text-slate-400 text-sm">Revenue</div><div className="text-2xl font-bold text-green-600 dark:text-green-400">Rp {Number(summary.total_revenue).toLocaleString('id-ID')}</div></div>
             </div>
+
+            {/* Bulk Actions Toolbar */}
+            {sales.length > 0 && (
+                <BulkActionsToolbar
+                    selectedIds={selectedIds}
+                    selectAllChecked={selectAllChecked}
+                    totalItems={sales?.length || 0}
+                    onSelectAll={() => toggleSelectAll(sales || [])}
+                    onDeleteSelected={handleDeleteSelected}
+                    isLoading={isDeleting}
+                />
+            )}
+
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
                 <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
                     <thead className="bg-slate-50 dark:bg-slate-700">
                         <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase">
+                                <input
+                                    type="checkbox"
+                                    checked={selectAllChecked}
+                                    onChange={() => toggleSelectAll(sales || [])}
+                                    className="rounded dark:bg-slate-700 dark:border-slate-600"
+                                />
+                            </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase">Invoice</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase">Date</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase">Cashier</th>
@@ -39,6 +87,14 @@ export default function TicketSalesReport({ auth, sales, dailySales, summary, fi
                     <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                         {sales.map(s => (
                             <tr key={s.invoice_no}>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <input
+                                        type="checkbox"
+                                        checked={isSelected(s.id)}
+                                        onChange={() => toggleSelection(s.id)}
+                                        className="rounded dark:bg-slate-700 dark:border-slate-600"
+                                    />
+                                </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm">{s.invoice_no}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm">{s.sale_date}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm">{s.cashier_name}</td>

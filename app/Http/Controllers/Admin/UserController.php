@@ -114,4 +114,21 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')
             ->with('success', 'User deleted successfully');
     }
+
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:users,id',
+        ]);
+
+        // Check if user is trying to delete their own account
+        if (in_array(auth()->id(), $validated['ids'])) {
+            return back()->with('error', 'Cannot delete your own account');
+        }
+
+        $deletedCount = User::whereIn('id', $validated['ids'])->delete();
+
+        return back()->with('success', "$deletedCount user(s) deleted successfully");
+    }
 }

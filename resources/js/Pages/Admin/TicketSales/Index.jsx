@@ -1,12 +1,54 @@
-    import { useState } from 'react';
-    import { router, Link } from '@inertiajs/react';
+    import { useState, useEffect } from 'react';
+    import { router, Link, usePage } from '@inertiajs/react';
     import AdminLayout from '@/Layouts/AdminLayout';
     import DataTable from '@/Components/Admin/DataTable';
+    import BulkActionsToolbar from '@/Components/Admin/BulkActionsToolbar';
     import { PlusIcon, EyeIcon, PrinterIcon } from '@heroicons/react/24/outline';
+    import { useBulkSelection } from '@/hooks/useBulkSelection';
     import { format } from 'date-fns';
+    import toast from 'react-hot-toast';
 
     export default function TicketSaleIndex({ auth, ticketSales, filters }) {
+        const { flash } = usePage().props;
+        const [hasShownFlash, setHasShownFlash] = useState(false);
+        const [isDeleting, setIsDeleting] = useState(false);
+        const { selectedIds, selectAllChecked, toggleSelection, toggleSelectAll, clearSelection, isSelected } = useBulkSelection();
+
+        // Show flash messages
+        useEffect(() => {
+            if (!hasShownFlash && flash) {
+                if (flash.success) {
+                    toast.success(flash.success);
+                    setHasShownFlash(true);
+                }
+                if (flash.error) {
+                    toast.error(flash.error);
+                    setHasShownFlash(true);
+                }
+            }
+        }, [flash, hasShownFlash]);
+        
         const columns = [
+            {
+                header: ({ table }) => (
+                    <input
+                        type="checkbox"
+                        checked={selectAllChecked}
+                        onChange={() => toggleSelectAll(ticketSales.data || [])}
+                        className="rounded dark:bg-slate-700 dark:border-slate-600"
+                    />
+                ),
+                accessorKey: 'checkbox',
+                cell: ({ row }) => (
+                    <input
+                        type="checkbox"
+                        checked={isSelected(row.original.id)}
+                        onChange={() => toggleSelection(row.original.id)}
+                        className="rounded dark:bg-slate-700 dark:border-slate-600"
+                    />
+                ),
+                size: 50,
+            },
             {
                 header: 'Invoice No',
                 accessorKey: 'invoice_no',
@@ -95,6 +137,29 @@
             window.open(`/admin/ticket-sales/${id}/print`, '_blank');
         };
 
+        const handleDeleteSelected = () => {
+            if (selectedIds.length === 0) {
+                toast.error('No items selected');
+                return;
+            }
+
+            setIsDeleting(true);
+            router.delete(route('admin.ticket-sales.bulk-delete'), 
+                { ids: selectedIds },
+                {
+                    onSuccess: () => {
+                        toast.success(`${selectedIds.length} ticket sale(s) deleted successfully`);
+                        clearSelection();
+                        setIsDeleting(false);
+                    },
+                    onError: (errors) => {
+                        toast.error(errors.error || 'Failed to delete ticket sales');
+                        setIsDeleting(false);
+                    }
+                }
+            );
+        };
+
         return (
             <AdminLayout auth={auth} title="Ticket Sales">
                 <div className="mb-6">
@@ -153,6 +218,16 @@
                         </div>
                     </div>
                 </div>
+
+                {/* Bulk Actions Toolbar */}
+                <BulkActionsToolbar
+                    selectedIds={selectedIds}
+                    selectAllChecked={selectAllChecked}
+                    totalItems={ticketSales.data?.length || 0}
+                    onSelectAll={() => toggleSelectAll(ticketSales.data || [])}
+                    onDeleteSelected={handleDeleteSelected}
+                    isLoading={isDeleting}
+                />
 
                 <DataTable
                     columns={columns}

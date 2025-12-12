@@ -2,6 +2,7 @@ import { useForm, router, Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import AvailabilitySelector from '@/Components/AvailabilitySelector';
+import ProductAvailabilityStatus from '@/Components/ProductAvailabilityStatus';
 import toast from 'react-hot-toast';
 
 export default function Create({ auth, products }) {
@@ -420,6 +421,18 @@ export default function Create({ auth, products }) {
                                                 />
                                             </div>
                                         </div>
+
+                                        {/* Availability Status Check */}
+                                        {unit.product_id && unit.quantity && data.checkin_date && data.checkout_date && (
+                                            <div className="pt-2">
+                                                <ProductAvailabilityStatus 
+                                                    productId={Number(unit.product_id)}
+                                                    quantity={unit.quantity}
+                                                    checkinDate={data.checkin_date}
+                                                    checkoutDate={data.checkout_date}
+                                                />
+                                            </div>
+                                        )}
 
                                         {/* Subtotal and Remove Button */}
                                         <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-700">

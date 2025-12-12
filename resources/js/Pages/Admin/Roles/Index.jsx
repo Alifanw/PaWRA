@@ -2,16 +2,40 @@ import { useState } from 'react';
 import { router, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import DataTable from '@/Components/Admin/DataTable';
+import BulkActionsToolbar from '@/Components/Admin/BulkActionsToolbar';
 import Modal from '@/Components/Modal';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useBulkSelection } from '@/hooks/useBulkSelection';
 import toast from 'react-hot-toast';
 
 export default function RoleIndex({ auth, roles, filters, availablePermissions }) {
     const [showModal, setShowModal] = useState(false);
     const [editingRole, setEditingRole] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const { selectedIds, selectAllChecked, toggleSelection, toggleSelectAll, clearSelection, isSelected } = useBulkSelection();
     const { data, setData, post, put, processing, errors, reset } = useForm({ name: '', description: '', permissions: [] });
 
     const columns = [
+        {
+            header: ({ table }) => (
+                <input
+                    type="checkbox"
+                    checked={selectAllChecked}
+                    onChange={() => toggleSelectAll(roles.data || [])}
+                    className="rounded dark:bg-slate-700 dark:border-slate-600"
+                />
+            ),
+            accessorKey: 'checkbox',
+            cell: ({ row }) => (
+                <input
+                    type="checkbox"
+                    checked={isSelected(row.original.id)}
+                    onChange={() => toggleSelection(row.original.id)}
+                    className="rounded dark:bg-slate-700 dark:border-slate-600"
+                />
+            ),
+            size: 50,
+        },
         { header: 'Name', accessorKey: 'name' },
         { header: 'Description', accessorKey: 'description' },
         { header: 'Users', accessorKey: 'users_count' },
@@ -41,10 +65,36 @@ export default function RoleIndex({ auth, roles, filters, availablePermissions }
     const handleDelete = (id) => {
         if (confirm('Delete this role?')) {
             router.delete(route('admin.roles.destroy', id), {
-                onSuccess: () => toast.success('Role deleted'),
+                onSuccess: () => {
+                    toast.success('Role deleted');
+                    clearSelection();
+                },
                 onError: (errors) => toast.error(errors.error || 'Failed'),
             });
         }
+    };
+
+    const handleDeleteSelected = () => {
+        if (selectedIds.length === 0) {
+            toast.error('No items selected');
+            return;
+        }
+
+        setIsDeleting(true);
+        router.delete(route('admin.roles.bulk-delete'), 
+            { ids: selectedIds },
+            {
+                onSuccess: () => {
+                    toast.success(`${selectedIds.length} role(s) deleted successfully`);
+                    clearSelection();
+                    setIsDeleting(false);
+                },
+                onError: (errors) => {
+                    toast.error(errors.error || 'Failed to delete roles');
+                    setIsDeleting(false);
+                }
+            }
+        );
     };
 
     const handleSubmit = (e) => {
@@ -70,6 +120,17 @@ export default function RoleIndex({ auth, roles, filters, availablePermissions }
                     <PlusIcon className="-ml-1 mr-2 h-5 w-5" />Add Role
                 </button>
             </div>
+
+            {/* Bulk Actions Toolbar */}
+            <BulkActionsToolbar
+                selectedIds={selectedIds}
+                selectAllChecked={selectAllChecked}
+                totalItems={roles.data?.length || 0}
+                onSelectAll={() => toggleSelectAll(roles.data || [])}
+                onDeleteSelected={handleDeleteSelected}
+                isLoading={isDeleting}
+            />
+
             <DataTable columns={columns} data={roles.data} pagination={roles} routeName="admin.roles.index" filters={filters} />
             <Modal show={showModal} onClose={closeModal} maxWidth="3xl">
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">

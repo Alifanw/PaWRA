@@ -9,6 +9,7 @@ class BookingUnit extends Model
     protected $fillable = [
         'booking_id',
         'product_id',
+        'product_code_id',
         'product_availability_id',
         'quantity',
         'unit_price',
@@ -49,6 +50,14 @@ class BookingUnit extends Model
     public function availability()
     {
         return $this->belongsTo(ProductAvailability::class, 'product_availability_id');
+    }
+
+    /**
+     * Get the product code (physical item) for this booking unit.
+     */
+    public function productCode()
+    {
+        return $this->belongsTo(ProductCode::class, 'product_code_id');
     }
 
     /**

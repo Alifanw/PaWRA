@@ -58,4 +58,28 @@ class Product extends Model
     {
         return $this->hasMany(ProductAvailability::class, 'product_id');
     }
+
+    /**
+     * Get the product codes (physical items) for this product.
+     */
+    public function productCodes()
+    {
+        return $this->hasMany(ProductCode::class, 'product_id');
+    }
+
+    /**
+     * Get available product codes
+     */
+    public function availableProductCodes()
+    {
+        return $this->hasMany(ProductCode::class, 'product_id')->where('status', 'available');
+    }
+
+    /**
+     * Get count of available product codes
+     */
+    public function getAvailableCodesCountAttribute(): int
+    {
+        return $this->availableProductCodes()->count();
+    }
 }

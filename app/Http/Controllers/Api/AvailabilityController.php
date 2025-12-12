@@ -207,4 +207,108 @@ class AvailabilityController extends Controller
             'calendar' => $calendar,
         ]);
     }
+
+    /**
+     * Get available product codes (physical items) for a product
+     * 
+     * GET /api/availabilities/product-codes?product_id=1&checkin=2025-12-10&checkout=2025-12-12
+     */
+    public function getAvailableProductCodes(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'checkin' => 'nullable|date_format:Y-m-d',
+            'checkout' => 'nullable|date_format:Y-m-d|after:checkin',
+        ]);
+
+        $product = Product::findOrFail($request->product_id);
+        
+        $checkin = $request->checkin ? Carbon::createFromFormat('Y-m-d', $request->checkin)->startOfDay() : null;
+        $checkout = $request->checkout ? Carbon::createFromFormat('Y-m-d', $request->checkout)->startOfDay() : null;
+
+        // Get product codes availability
+        $query = $product->productCodes()->where('status', 'available');
+
+        if ($checkin && $checkout) {
+            // Filter codes without conflicting bookings
+            $query->whereDoesntHave('bookingUnits.booking', function ($q) use ($checkin, $checkout) {
+                $q->whereNotIn('status', ['cancelled', 'rejected'])
+                    ->where(function ($subQ) use ($checkin, $checkout) {
+                        $subQ->where('checkin', '<', $checkout)
+                            ->where('checkout', '>', $checkin);
+                    });
+            });
+        }
+
+        $availableCodes = $query->get(['id', 'code', 'status', 'notes']);
+        $totalAvailable = $availableCodes->count();
+        $totalCodes = $product->productCodes()->count();
+
+        return response()->json([
+            'success' => true,
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'product_code' => $product->code,
+            'total_codes' => $totalCodes,
+            'available_count' => $totalAvailable,
+            'unavailable_count' => $totalCodes - $totalAvailable,
+            'codes' => $availableCodes->map(fn($code) => [
+                'id' => $code->id,
+                'code' => $code->code,
+                'status' => $code->status,
+            ]),
+            'checkin' => $checkin?->format('Y-m-d'),
+            'checkout' => $checkout?->format('Y-m-d'),
+        ]);
+    }
+
+    /**
+     * Check product availability and get summary
+     * 
+     * GET /api/availabilities/check?product_id=1&quantity=5&checkin=2025-12-10&checkout=2025-12-12
+     */
+    public function checkAvailability(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1',
+            'checkin' => 'nullable|date_format:Y-m-d',
+            'checkout' => 'nullable|date_format:Y-m-d|after:checkin',
+        ]);
+
+        $product = Product::findOrFail($request->product_id);
+        
+        $checkin = $request->checkin ? Carbon::createFromFormat('Y-m-d', $request->checkin)->startOfDay() : null;
+        $checkout = $request->checkout ? Carbon::createFromFormat('Y-m-d', $request->checkout)->startOfDay() : null;
+        $requiredQty = (int) $request->quantity;
+
+        // Get available product codes
+        $query = $product->productCodes()->where('status', 'available');
+
+        if ($checkin && $checkout) {
+            $query->whereDoesntHave('bookingUnits.booking', function ($q) use ($checkin, $checkout) {
+                $q->whereNotIn('status', ['cancelled', 'rejected'])
+                    ->where(function ($subQ) use ($checkin, $checkout) {
+                        $subQ->where('checkin', '<', $checkout)
+                            ->where('checkout', '>', $checkin);
+                    });
+            });
+        }
+
+        $availableCount = $query->count();
+        $isAvailable = $availableCount >= $requiredQty;
+
+        return response()->json([
+            'success' => true,
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'product_code' => $product->code,
+            'available' => $isAvailable,
+            'available_count' => $availableCount,
+            'required_count' => $requiredQty,
+            'message' => $isAvailable 
+                ? "Tersedia {$availableCount} unit" 
+                : "Hanya tersedia {$availableCount} unit (dibutuhkan {$requiredQty})",
+        ]);
+    }
 }

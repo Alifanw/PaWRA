@@ -17,6 +17,97 @@ use App\Exports\AllReportsExport;
 
 class ReportController extends Controller
 {
+    public function allTransactions(Request $request)
+    {
+        $startDate = $request->start_date ?? now()->startOfMonth()->toDateString();
+        $endDate = $request->end_date ?? now()->toDateString();
+        
+        // Convert to datetime for proper range filtering
+        $startDateTime = $startDate . ' 00:00:00';
+        $endDateTime = $endDate . ' 23:59:59';
+
+        $transactions = [];
+
+        // Get Bookings
+        $bookings = Booking::with(['creator', 'bookingUnits.product'])
+            ->whereBetween('checkin', [$startDate, $endDate])
+            ->orderBy('checkin', 'desc')
+            ->get()
+            ->each(function($booking) use (&$transactions) {
+                $transactions[] = [
+                    'type' => 'booking',
+                    'id' => $booking->id,
+                    'code_or_invoice' => $booking->booking_code,
+                    'transaction_date' => is_string($booking->checkin) ? $booking->checkin : $booking->checkin->toDateString(),
+                    'name_customer' => $booking->customer_name,
+                    'qty_nights' => $booking->night_count,
+                    'gross_amount' => $booking->total_amount,
+                    'discount_amount' => 0,
+                    'net_amount' => $booking->total_amount,
+                    'status' => $booking->status,
+                ];
+            });
+
+        // Get Ticket Sales
+        $sales = TicketSale::with(['cashier', 'items.product'])
+            ->whereBetween('sale_date', [$startDateTime, $endDateTime])
+            ->orderBy('sale_date', 'desc')
+            ->get()
+            ->each(function($sale) use (&$transactions) {
+                $transactions[] = [
+                    'type' => 'ticket_sale',
+                    'id' => $sale->id,
+                    'code_or_invoice' => $sale->invoice_no,
+                    'transaction_date' => is_string($sale->sale_date) ? $sale->sale_date : $sale->sale_date->toDateString(),
+                    'name_customer' => $sale->cashier?->name,
+                    'qty_nights' => $sale->total_qty,
+                    'gross_amount' => $sale->gross_amount,
+                    'discount_amount' => $sale->discount_amount,
+                    'net_amount' => $sale->net_amount,
+                    'status' => 'completed',
+                ];
+            });
+
+        // Get Parking Transactions
+        $parkingTx = ParkingTransaction::with(['user'])
+            ->whereBetween('created_at', [$startDateTime, $endDateTime])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->each(function($pt) use (&$transactions) {
+                $transactions[] = [
+                    'type' => 'parking_transaction',
+                    'id' => $pt->id,
+                    'code_or_invoice' => $pt->transaction_code,
+                    'transaction_date' => $pt->created_at->toDateString(),
+                    'name_customer' => $pt->user?->name ?? 'N/A',
+                    'qty_nights' => $pt->vehicle_count,
+                    'gross_amount' => $pt->total_amount,
+                    'discount_amount' => 0,
+                    'net_amount' => $pt->total_amount,
+                    'status' => $pt->status,
+                ];
+            });
+
+        // Sort by date descending
+        usort($transactions, function($a, $b) {
+            return strtotime($b['transaction_date']) - strtotime($a['transaction_date']);
+        });
+
+        // Calculate summary
+        $summary = [
+            'total_transactions' => count($transactions),
+            'with_discount_count' => collect($transactions)->where('discount_amount', '>', 0)->count(),
+            'total_discount' => collect($transactions)->sum('discount_amount'),
+            'total_revenue' => collect($transactions)->sum('net_amount'),
+        ];
+
+        return Inertia::render('Admin/Reports/AllTransactions', [
+            'transactions' => $transactions,
+            'summary' => $summary,
+            'filters' => compact('startDate', 'endDate'),
+        ]);
+    }
+
     public function bookings(Request $request)
     {
         $startDate = $request->start_date ?? now()->startOfMonth()->toDateString();
@@ -226,5 +317,75 @@ class ReportController extends Controller
         $filename = 'all_reports_'.$startDate.'_to_'.$endDate.'.xlsx';
 
         return Excel::download(new AllReportsExport($startDate, $endDate), $filename);
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+        ]);
+
+        // This is a report view, no direct delete action
+        return back()->with('info', 'Reports cannot be deleted directly. Delete transactions instead.');
+    }
+
+    public function bulkDeleteTicketSales(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:ticket_sales,id',
+        ]);
+
+        // Check which sales are paid
+        $paidSales = TicketSale::whereIn('id', $validated['ids'])
+            ->where('transaction_status', '!=', 'unpaid')
+            ->pluck('invoice_no')
+            ->toArray();
+
+        if (!empty($paidSales)) {
+            return back()->with('error', 'Cannot delete paid transactions: ' . implode(', ', $paidSales));
+        }
+
+        // Bulk delete
+        DB::beginTransaction();
+        try {
+            $deletedCount = TicketSale::whereIn('id', $validated['ids'])->delete();
+            DB::commit();
+
+            return back()->with('success', "$deletedCount ticket sale(s) deleted successfully");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to delete ticket sales');
+        }
+    }
+
+    public function bulkDeleteBookings(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:bookings,id',
+        ]);
+
+        // Check which bookings are not pending
+        $nonPendingBookings = Booking::whereIn('id', $validated['ids'])
+            ->where('status', '!=', 'pending')
+            ->pluck('booking_code')
+            ->toArray();
+
+        if (!empty($nonPendingBookings)) {
+            return back()->with('error', 'Only pending bookings can be deleted: ' . implode(', ', $nonPendingBookings));
+        }
+
+        // Bulk delete
+        DB::beginTransaction();
+        try {
+            $deletedCount = Booking::whereIn('id', $validated['ids'])->delete();
+            DB::commit();
+
+            return back()->with('success', "$deletedCount booking(s) deleted successfully");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to delete bookings');
+        }
     }
 }

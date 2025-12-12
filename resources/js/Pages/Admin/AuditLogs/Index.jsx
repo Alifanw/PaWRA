@@ -1,9 +1,58 @@
+import { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import DataTable from '@/Components/Admin/DataTable';
+import BulkActionsToolbar from '@/Components/Admin/BulkActionsToolbar';
 import { router } from '@inertiajs/react';
+import { useBulkSelection } from '@/hooks/useBulkSelection';
+import toast from 'react-hot-toast';
 
 export default function AuditLogIndex({ auth, logs, actions, filters }) {
+    const [isDeleting, setIsDeleting] = useState(false);
+    const { selectedIds, selectAllChecked, toggleSelection, toggleSelectAll, clearSelection, isSelected } = useBulkSelection();
+
+    const handleDeleteSelected = () => {
+        if (selectedIds.length === 0) {
+            toast.error('No items selected');
+            return;
+        }
+
+        setIsDeleting(true);
+        router.delete(route('admin.audit-logs.bulk-delete'), 
+            { ids: selectedIds },
+            {
+                onSuccess: () => {
+                    toast.success(`${selectedIds.length} log(s) deleted successfully`);
+                    clearSelection();
+                    setIsDeleting(false);
+                },
+                onError: (errors) => {
+                    toast.error(errors.error || 'Failed to delete logs');
+                    setIsDeleting(false);
+                }
+            }
+        );
+    };
     const columns = [
+        {
+            header: ({ table }) => (
+                <input
+                    type="checkbox"
+                    checked={selectAllChecked}
+                    onChange={() => toggleSelectAll(logs.data || [])}
+                    className="rounded dark:bg-slate-700 dark:border-slate-600"
+                />
+            ),
+            accessorKey: 'checkbox',
+            cell: ({ row }) => (
+                <input
+                    type="checkbox"
+                    checked={isSelected(row.original.id)}
+                    onChange={() => toggleSelection(row.original.id)}
+                    className="rounded dark:bg-slate-700 dark:border-slate-600"
+                />
+            ),
+            size: 50,
+        },
         { header: 'Date', accessorKey: 'created_at' },
         { header: 'Action', accessorKey: 'action' },
         { header: 'Resource', accessorKey: 'resource' },
@@ -41,6 +90,9 @@ export default function AuditLogIndex({ auth, logs, actions, filters }) {
                     </div>
                 </div>
             </div>
+            {selectedIds.length > 0 && (
+                <BulkActionsToolbar selectedCount={selectedIds.length} onDelete={handleDeleteSelected} isDeleting={isDeleting} />
+            )}
             <DataTable columns={columns} data={logs.data} pagination={logs} routeName="admin.audit-logs.index" filters={filters} />
         </AdminLayout>
     );

@@ -52,9 +52,37 @@ class BookingController extends Controller
 
     public function create()
     {
-        $products = Product::where('is_active', true)
-            ->with('category')
-            ->get(['id', 'code', 'name', 'category_id', 'base_price']);
+        $user = auth()->user();
+        
+        // Get query for products
+        $query = Product::where('is_active', true)
+            ->with(['category', 'productCodes']);
+
+        // Filter by role if user has specific role
+        if ($user && $user->roles()->exists()) {
+            $roles = $user->roles()->pluck('slug')->toArray();
+
+            // Petugas Tiket: Permainan, Kolam, Tiket Masuk
+            if (in_array('ticket_staff', $roles)) {
+                $query->whereHas('category', function ($q) {
+                    $q->where('category_type', 'ticket');
+                });
+            }
+            // Petugas Villa: Villa dan Parking
+            elseif (in_array('villa_staff', $roles)) {
+                $query->whereHas('category', function ($q) {
+                    $q->where('category_type', 'villa');
+                });
+            }
+            // Petugas Parking
+            elseif (in_array('parking_staff', $roles)) {
+                $query->whereHas('category', function ($q) {
+                    $q->where('category_type', 'parking');
+                });
+            }
+        }
+
+        $products = $query->get(['id', 'code', 'name', 'category_id', 'base_price']);
 
         return Inertia::render('Admin/Bookings/Create', [
             'products' => $products,
@@ -89,6 +117,13 @@ class BookingController extends Controller
 
             // Validate availability for each unit
             foreach ($validated['units'] as $unit) {
+                $product = Product::findOrFail($unit['product_id']);
+                $quantity = (int)($unit['quantity'] ?? 1);
+
+                // Check if product category is "tiket masuk" (ticket entrance - no stock check needed)
+                $isTicketEntrance = $product->category && $product->category->code === 'ticket_entrance';
+
+                // For villa products with availability_id
                 if ($unit['product_availability_id'] ?? null) {
                     try {
                         $availability = \App\Models\ProductAvailability::findOrFail($unit['product_availability_id']);
@@ -112,7 +147,26 @@ class BookingController extends Controller
                         }
                     } catch (\Exception $e) {
                         // If booking/availability tables not ready, skip validation
-                        // Allow booking to proceed
+                    }
+                }
+                // For products with product codes (ATV, games, etc.) - EXCEPT ticket entrance
+                elseif (!$isTicketEntrance && $product->productCodes()->exists()) {
+                    $availableCodesCount = $product->productCodes()
+                        ->where('status', 'available')
+                        ->whereDoesntHave('bookingUnits.booking', function ($q) use ($checkin, $checkout) {
+                            $q->whereNotIn('status', ['cancelled', 'rejected'])
+                                ->where(function ($subQ) use ($checkin, $checkout) {
+                                    $subQ->where('checkin', '<', $checkout)
+                                        ->where('checkout', '>', $checkin);
+                                });
+                        })
+                        ->count();
+
+                    if ($availableCodesCount < $quantity) {
+                        DB::rollBack();
+                        return back()->withInput()->with('error', 
+                            "Produk '{$product->name}' tidak tersedia cukup. Tersedia: {$availableCodesCount}, Dibutuhkan: {$quantity}"
+                        );
                     }
                 }
             }
@@ -296,6 +350,42 @@ class BookingController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Failed to delete booking');
+        }
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:bookings,id',
+        ]);
+
+        // Check which bookings are not pending
+        $nonPendingBookings = Booking::whereIn('id', $validated['ids'])
+            ->where('status', '!=', 'pending')
+            ->pluck('booking_code')
+            ->toArray();
+
+        if (!empty($nonPendingBookings)) {
+            return back()->with('error', 'Only pending bookings can be deleted: ' . implode(', ', $nonPendingBookings));
+        }
+
+        DB::beginTransaction();
+        try {
+            // Get all bookings to delete
+            $bookings = Booking::whereIn('id', $validated['ids'])->get();
+
+            foreach ($bookings as $booking) {
+                $booking->bookingUnits()->delete();
+                $booking->bookingPayments()->delete();
+                $booking->delete();
+            }
+
+            DB::commit();
+            return back()->with('success', count($validated['ids']) . ' booking(s) deleted successfully');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to delete bookings');
         }
     }
 }

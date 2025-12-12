@@ -29,6 +29,8 @@ Route::prefix('availabilities')->group(function () {
     Route::get('/', [AvailabilityController::class, 'getByProduct']);
     Route::get('/product/{productId}', [AvailabilityController::class, 'getAllByProduct']);
     Route::get('/calendar', [AvailabilityController::class, 'getCalendar']);
+    Route::get('/product-codes', [AvailabilityController::class, 'getAvailableProductCodes']);
+    Route::get('/check', [AvailabilityController::class, 'checkAvailability']);
 });
 
 // Protected routes
@@ -62,6 +64,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('availabilities', [AvailabilityController::class, 'store']);
         Route::put('availabilities/{availability}', [AvailabilityController::class, 'update']);
         Route::delete('availabilities/{availability}', [AvailabilityController::class, 'destroy']);
+    });
+
+    // Product Codes
+    Route::middleware('permission:products.manage,products.view')->group(function () {
+        Route::get('product-codes', [\App\Http\Controllers\Api\ProductCodeController::class, 'index']);
+        Route::get('product-codes/available', [\App\Http\Controllers\Api\ProductCodeController::class, 'getAvailable']);
+        Route::post('product-codes', [\App\Http\Controllers\Api\ProductCodeController::class, 'store']);
+        Route::put('product-codes/{productCode}', [\App\Http\Controllers\Api\ProductCodeController::class, 'update']);
+        Route::delete('product-codes/{productCode}', [\App\Http\Controllers\Api\ProductCodeController::class, 'destroy']);
+        Route::put('product-codes/bulk-status', [\App\Http\Controllers\Api\ProductCodeController::class, 'bulkUpdateStatus']);
     });
 
     // Bookings

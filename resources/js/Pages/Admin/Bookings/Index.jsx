@@ -1,11 +1,36 @@
+import { useState } from 'react';
 import { router, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import DataTable from '@/Components/Admin/DataTable';
+import BulkActionsToolbar from '@/Components/Admin/BulkActionsToolbar';
 import { PlusIcon, EyeIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useBulkSelection } from '@/hooks/useBulkSelection';
 import toast from 'react-hot-toast';
 
 export default function BookingIndex({ auth, bookings, filters }) {
+    const [isDeleting, setIsDeleting] = useState(false);
+    const { selectedIds, selectAllChecked, toggleSelection, toggleSelectAll, clearSelection, isSelected } = useBulkSelection();
     const columns = [
+        {
+            header: ({ table }) => (
+                <input
+                    type="checkbox"
+                    checked={selectAllChecked}
+                    onChange={() => toggleSelectAll(bookings.data || [])}
+                    className="rounded dark:bg-slate-700 dark:border-slate-600"
+                />
+            ),
+            accessorKey: 'checkbox',
+            cell: ({ row }) => (
+                <input
+                    type="checkbox"
+                    checked={isSelected(row.original.id)}
+                    onChange={() => toggleSelection(row.original.id)}
+                    className="rounded dark:bg-slate-700 dark:border-slate-600"
+                />
+            ),
+            size: 50,
+        },
         {
             header: 'Booking Code',
             accessorKey: 'booking_code',
@@ -88,10 +113,36 @@ export default function BookingIndex({ auth, bookings, filters }) {
     const handleDelete = (id) => {
         if (confirm('Are you sure you want to delete this booking?')) {
             router.delete(route('admin.bookings.destroy', id), {
-                onSuccess: () => toast.success('Booking deleted successfully'),
+                onSuccess: () => {
+                    toast.success('Booking deleted successfully');
+                    clearSelection();
+                },
                 onError: (errors) => toast.error(errors.error || 'Failed to delete booking'),
             });
         }
+    };
+
+    const handleDeleteSelected = () => {
+        if (selectedIds.length === 0) {
+            toast.error('No items selected');
+            return;
+        }
+
+        setIsDeleting(true);
+        router.delete(route('admin.bookings.bulk-delete'), 
+            { ids: selectedIds },
+            {
+                onSuccess: () => {
+                    toast.success(`${selectedIds.length} booking(s) deleted successfully`);
+                    clearSelection();
+                    setIsDeleting(false);
+                },
+                onError: (errors) => {
+                    toast.error(errors.error || 'Failed to delete bookings');
+                    setIsDeleting(false);
+                }
+            }
+        );
     };
 
     return (
@@ -150,6 +201,16 @@ export default function BookingIndex({ auth, bookings, filters }) {
                     </div>
                 </div>
             </div>
+
+            {/* Bulk Actions Toolbar */}
+            <BulkActionsToolbar
+                selectedIds={selectedIds}
+                selectAllChecked={selectAllChecked}
+                totalItems={bookings.data?.length || 0}
+                onSelectAll={() => toggleSelectAll(bookings.data || [])}
+                onDeleteSelected={handleDeleteSelected}
+                isLoading={isDeleting}
+            />
 
             <DataTable
                 columns={columns}

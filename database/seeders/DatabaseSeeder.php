@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -15,7 +16,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Seed roles first (idempotent)
+        // Seed roles first (idempotent using Model)
         $baseRoles = [
             ['name' => 'superadmin', 'description' => 'Super Administrator - Full Access', 'is_active' => true],
             ['name' => 'admin', 'description' => 'Administrator', 'is_active' => true],
@@ -25,9 +26,9 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($baseRoles as $r) {
-            \DB::table('roles')->updateOrInsert(
+            Role::updateOrCreate(
                 ['name' => $r['name']],
-                ['description' => $r['description'], 'is_active' => $r['is_active'], 'updated_at' => now(), 'created_at' => now()]
+                ['description' => $r['description'], 'is_active' => $r['is_active']]
             );
         }
 
@@ -168,9 +169,9 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($extraRoles as $r) {
-            \DB::table('roles')->updateOrInsert(
+            Role::updateOrCreate(
                 ['name' => $r['name']],
-                ['description' => $r['description'], 'is_active' => $r['is_active'], 'updated_at' => now(), 'created_at' => now()]
+                ['description' => $r['description'], 'is_active' => $r['is_active']]
             );
         }
 

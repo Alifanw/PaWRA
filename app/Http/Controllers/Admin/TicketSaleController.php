@@ -316,4 +316,37 @@ class TicketSaleController extends Controller
         ]);
         return $pdf->stream("struk-{$ticketSale->invoice_no}.pdf");
     }
+
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:ticket_sales,id',
+        ]);
+
+        // Check which sales are paid
+        $paidSales = TicketSale::whereIn('id', $validated['ids'])
+            ->where('transaction_status', '!=', 'unpaid')
+            ->pluck('invoice_no')
+            ->toArray();
+
+        if (!empty($paidSales)) {
+            return back()->with('error', 'Cannot delete paid transactions: ' . implode(', ', $paidSales));
+        }
+
+        // Bulk delete
+        DB::beginTransaction();
+        try {
+            foreach ($validated['ids'] as $saleId) {
+                TicketSaleItem::where('sale_id', $saleId)->delete();
+            }
+            $deletedCount = TicketSale::whereIn('id', $validated['ids'])->delete();
+            DB::commit();
+
+            return back()->with('success', "$deletedCount ticket sale(s) deleted successfully");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to delete ticket sales');
+        }
+    }
 }

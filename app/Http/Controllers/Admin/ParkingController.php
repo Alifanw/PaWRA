@@ -195,4 +195,16 @@ class ParkingController extends Controller
         $pdf = \PDF::loadView('pdf.parking-booking', ['booking' => $booking]);
         return $pdf->stream("parking-booking-{$booking->booking_code}.pdf");
     }
+
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:parking_transactions,id',
+        ]);
+
+        $deletedCount = ParkingTransaction::whereIn('id', $validated['ids'])->delete();
+
+        return back()->with('success', "$deletedCount parking transaction(s) deleted successfully");
+    }
 }

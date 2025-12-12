@@ -2,6 +2,7 @@ import { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { router } from '@inertiajs/react';
 import { TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 
 
 export default function Create({ auth, products }) {
@@ -95,10 +96,14 @@ export default function Create({ auth, products }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (cart.length === 0) return;
+        if (cart.length === 0) {
+            toast.error('Add at least one product to the cart');
+            return;
+        }
         setProcessing(true);
 
         const totalDiscount = calculateTotalDiscount();
+        const loadingToast = toast.loading('Creating ticket sale...');
 
         router.post(
             route('admin.ticket-sales.store'),
@@ -114,10 +119,25 @@ export default function Create({ auth, products }) {
                 payment_reference: paymentReference,
             },
             {
-                onSuccess: () => {
+                onSuccess: (response) => {
+                    toast.dismiss(loadingToast);
+                    toast.success('Ticket sale created successfully!', {
+                        duration: 5000,
+                    });
                     setCart([]);
                     setPaymentReference('');
                     setPaymentMethod('cash');
+                    
+                    // Redirect to index after 2 seconds to show the success message
+                    setTimeout(() => {
+                        router.visit(route('admin.ticket-sales.index'));
+                    }, 2000);
+                },
+                onError: (errors) => {
+                    toast.dismiss(loadingToast);
+                    const errorMessage = errors.message || 'Failed to create ticket sale';
+                    toast.error(errorMessage);
+                    console.error('Errors:', errors);
                 },
                 onFinish: () => setProcessing(false)
             }

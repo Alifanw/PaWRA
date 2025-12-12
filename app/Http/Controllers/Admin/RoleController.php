@@ -136,6 +136,33 @@ class RoleController extends Controller
             ->with('success', 'Role deleted successfully');
     }
 
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:roles,id',
+        ]);
+
+        // Check which roles are assigned to users
+        $rolesInUse = Role::whereIn('id', $validated['ids'])
+            ->whereHas('users')
+            ->pluck('name')
+            ->toArray();
+
+        if (!empty($rolesInUse)) {
+            return back()->with('error', 'Cannot delete roles in use: ' . implode(', ', $rolesInUse));
+        }
+
+        // Bulk delete role permissions and roles
+        foreach ($validated['ids'] as $roleId) {
+            RolePermission::where('role_id', $roleId)->delete();
+        }
+
+        $deletedCount = Role::whereIn('id', $validated['ids'])->delete();
+
+        return back()->with('success', "$deletedCount role(s) deleted successfully");
+    }
+
     public function permissions(Role $role)
     {
         $permissions = RolePermission::where('role_id', $role->id)

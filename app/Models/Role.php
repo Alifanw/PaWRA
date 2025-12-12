@@ -16,6 +16,7 @@ class Role extends Model
 
     protected $fillable = [
         'name',
+        'slug',
         'description',
         'is_active',
     ];
@@ -23,6 +24,14 @@ class Role extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    /**
+     * Scope: Get role by slug
+     */
+    public function scopeBySlug($query, $slug)
+    {
+        return $query->where('slug', $slug);
+    }
 
     /**
      * Get the users for the role.

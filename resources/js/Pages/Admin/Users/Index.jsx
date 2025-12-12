@@ -2,13 +2,17 @@ import { useState } from 'react';
 import { router, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import DataTable from '@/Components/Admin/DataTable';
+import BulkActionsToolbar from '@/Components/Admin/BulkActionsToolbar';
 import Modal from '@/Components/Modal';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useBulkSelection } from '@/hooks/useBulkSelection';
 import toast from 'react-hot-toast';
 
 export default function UserIndex({ auth, users, roles, filters }) {
     const [showModal, setShowModal] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const { selectedIds, selectAllChecked, toggleSelection, toggleSelectAll, clearSelection, isSelected } = useBulkSelection();
 
     const { data, setData, post, put, processing, errors, reset } = useForm({
         name: '',
@@ -20,6 +24,26 @@ export default function UserIndex({ auth, users, roles, filters }) {
     });
 
     const columns = [
+        {
+            header: ({ table }) => (
+                <input
+                    type="checkbox"
+                    checked={selectAllChecked}
+                    onChange={() => toggleSelectAll(users.data || [])}
+                    className="rounded dark:bg-slate-700 dark:border-slate-600"
+                />
+            ),
+            accessorKey: 'checkbox',
+            cell: ({ row }) => (
+                <input
+                    type="checkbox"
+                    checked={isSelected(row.original.id)}
+                    onChange={() => toggleSelection(row.original.id)}
+                    className="rounded dark:bg-slate-700 dark:border-slate-600"
+                />
+            ),
+            size: 50,
+        },
         { header: 'Name', accessorKey: 'name' },
         { header: 'Username', accessorKey: 'username' },
         { header: 'Email', accessorKey: 'email' },
@@ -61,10 +85,36 @@ export default function UserIndex({ auth, users, roles, filters }) {
     const handleDelete = (id) => {
         if (confirm('Delete this user?')) {
             router.delete(route('admin.users.destroy', id), {
-                onSuccess: () => toast.success('User deleted'),
+                onSuccess: () => {
+                    toast.success('User deleted');
+                    clearSelection();
+                },
                 onError: (errors) => toast.error(errors.error || 'Failed'),
             });
         }
+    };
+
+    const handleDeleteSelected = () => {
+        if (selectedIds.length === 0) {
+            toast.error('No items selected');
+            return;
+        }
+
+        setIsDeleting(true);
+        router.delete(route('admin.users.bulk-delete'), 
+            { ids: selectedIds },
+            {
+                onSuccess: () => {
+                    toast.success(`${selectedIds.length} user(s) deleted successfully`);
+                    clearSelection();
+                    setIsDeleting(false);
+                },
+                onError: (errors) => {
+                    toast.error(errors.error || 'Failed to delete users');
+                    setIsDeleting(false);
+                }
+            }
+        );
     };
 
     const handleSubmit = (e) => {
@@ -95,6 +145,17 @@ export default function UserIndex({ auth, users, roles, filters }) {
                     </select>
                 </div>
             </div>
+
+            {/* Bulk Actions Toolbar */}
+            <BulkActionsToolbar
+                selectedIds={selectedIds}
+                selectAllChecked={selectAllChecked}
+                totalItems={users.data?.length || 0}
+                onSelectAll={() => toggleSelectAll(users.data || [])}
+                onDeleteSelected={handleDeleteSelected}
+                isLoading={isDeleting}
+            />
+
             <DataTable columns={columns} data={users.data} pagination={users} routeName="admin.users.index" filters={filters} />
             <Modal show={showModal} onClose={closeModal} maxWidth="2xl">
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">

@@ -1,7 +1,36 @@
+import { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
+import BulkActionsToolbar from '@/Components/Admin/BulkActionsToolbar';
+import { useBulkSelection } from '@/hooks/useBulkSelection';
+import toast from 'react-hot-toast';
 
 export default function Index({ auth, transactions, filters }) {
+    const [isDeleting, setIsDeleting] = useState(false);
+    const { selectedIds, selectAllChecked, toggleSelection, toggleSelectAll, clearSelection, isSelected } = useBulkSelection();
+
+    const handleDeleteSelected = () => {
+        if (selectedIds.length === 0) {
+            toast.error('No items selected');
+            return;
+        }
+
+        setIsDeleting(true);
+        router.delete(route('admin.parking.bulk-delete'), 
+            { ids: selectedIds },
+            {
+                onSuccess: () => {
+                    toast.success(`${selectedIds.length} transaction(s) deleted successfully`);
+                    clearSelection();
+                    setIsDeleting(false);
+                },
+                onError: (errors) => {
+                    toast.error(errors.error || 'Failed to delete transactions');
+                    setIsDeleting(false);
+                }
+            }
+        );
+    };
     return (
         <AdminLayout auth={auth}>
             <div className="mb-6">
@@ -17,10 +46,28 @@ export default function Index({ auth, transactions, filters }) {
             </div>
 
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
+                {/* Bulk Actions Toolbar */}
+                <BulkActionsToolbar
+                    selectedIds={selectedIds}
+                    selectAllChecked={selectAllChecked}
+                    totalItems={transactions.data?.length || 0}
+                    onSelectAll={() => toggleSelectAll(transactions.data || [])}
+                    onDeleteSelected={handleDeleteSelected}
+                    isLoading={isDeleting}
+                />
+
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
                         <thead>
                             <tr>
+                                <th className="px-4 py-2 text-left text-sm text-slate-500">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectAllChecked}
+                                        onChange={() => toggleSelectAll(transactions.data || [])}
+                                        className="rounded dark:bg-slate-700 dark:border-slate-600"
+                                    />
+                                </th>
                                 <th className="px-4 py-2 text-left text-sm text-slate-500">Code</th>
                                 <th className="px-4 py-2 text-left text-sm text-slate-500">Vehicle</th>
                                 <th className="px-4 py-2 text-left text-sm text-slate-500">Type</th>
@@ -35,6 +82,14 @@ export default function Index({ auth, transactions, filters }) {
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                             {transactions.data?.map((t) => (
                                 <tr key={t.id}>
+                                    <td className="px-4 py-3">
+                                        <input
+                                            type="checkbox"
+                                            checked={isSelected(t.id)}
+                                            onChange={() => toggleSelection(t.id)}
+                                            className="rounded dark:bg-slate-700 dark:border-slate-600"
+                                        />
+                                    </td>
                                     <td className="px-4 py-3">{t.transaction_code}</td>
                                     <td className="px-4 py-3">{t.vehicle_number || '-'}</td>
                                     <td className="px-4 py-3">{t.vehicle_type === 'roda4_6' ? 'Roda 4 & 6' : 'Roda 2'}</td>

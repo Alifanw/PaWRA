@@ -25,6 +25,7 @@ const navigation = [
         name: 'Reports',
         icon: ChartBarIcon,
         children: [
+            { name: 'All Transactions', href: '/admin/reports/all-transactions', permission: '*' },
             { name: 'Booking Reports', href: '/admin/reports/bookings', permission: '*' },
             { name: 'Sales Reports', href: '/admin/reports/ticket-sales', permission: '*' },
             { name: 'Export All Reports', href: '/admin/reports/export-all', permission: '*' },

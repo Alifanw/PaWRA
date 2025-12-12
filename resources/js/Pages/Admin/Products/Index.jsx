@@ -2,13 +2,17 @@ import { useState } from 'react';
 import { router, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import DataTable from '@/Components/Admin/DataTable';
+import BulkActionsToolbar from '@/Components/Admin/BulkActionsToolbar';
 import Modal from '@/Components/Modal';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useBulkSelection } from '@/hooks/useBulkSelection';
 import toast from 'react-hot-toast';
 
 export default function ProductIndex({ auth, products, categories, filters }) {
     const [showModal, setShowModal] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const { selectedIds, selectAllChecked, toggleSelection, toggleSelectAll, clearSelection, isSelected } = useBulkSelection();
 
     const { data, setData, post, put, processing, errors, reset } = useForm({
         category_id: '',
@@ -19,6 +23,26 @@ export default function ProductIndex({ auth, products, categories, filters }) {
     });
 
     const columns = [
+        {
+            header: ({ table }) => (
+                <input
+                    type="checkbox"
+                    checked={selectAllChecked}
+                    onChange={() => toggleSelectAll(products.data || [])}
+                    className="rounded dark:bg-slate-700 dark:border-slate-600"
+                />
+            ),
+            accessorKey: 'checkbox',
+            cell: ({ row }) => (
+                <input
+                    type="checkbox"
+                    checked={isSelected(row.original.id)}
+                    onChange={() => toggleSelection(row.original.id)}
+                    className="rounded dark:bg-slate-700 dark:border-slate-600"
+                />
+            ),
+            size: 50,
+        },
         {
             header: 'Code',
             accessorKey: 'code',
@@ -86,10 +110,36 @@ export default function ProductIndex({ auth, products, categories, filters }) {
     const handleDelete = (id) => {
         if (confirm('Are you sure you want to delete this product?')) {
             router.delete(route('admin.products.destroy', id), {
-                onSuccess: () => toast.success('Product deleted successfully'),
+                onSuccess: () => {
+                    toast.success('Product deleted successfully');
+                    clearSelection();
+                },
                 onError: (errors) => toast.error(errors.error || 'Failed to delete product'),
             });
         }
+    };
+
+    const handleDeleteSelected = () => {
+        if (selectedIds.length === 0) {
+            toast.error('No items selected');
+            return;
+        }
+
+        setIsDeleting(true);
+        router.delete(route('admin.products.bulk-delete'), 
+            { ids: selectedIds },
+            {
+                onSuccess: () => {
+                    toast.success(`${selectedIds.length} product(s) deleted successfully`);
+                    clearSelection();
+                    setIsDeleting(false);
+                },
+                onError: (errors) => {
+                    toast.error(errors.error || 'Failed to delete products');
+                    setIsDeleting(false);
+                }
+            }
+        );
     };
 
     const handleSubmit = (e) => {
@@ -178,6 +228,16 @@ export default function ProductIndex({ auth, products, categories, filters }) {
                     </div>
                 </div>
             </div>
+
+            {/* Bulk Actions Toolbar */}
+            <BulkActionsToolbar
+                selectedIds={selectedIds}
+                selectAllChecked={selectAllChecked}
+                totalItems={products.data?.length || 0}
+                onSelectAll={() => toggleSelectAll(products.data || [])}
+                onDeleteSelected={handleDeleteSelected}
+                isLoading={isDeleting}
+            />
 
             <DataTable
                 columns={columns}

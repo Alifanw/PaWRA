@@ -76,4 +76,16 @@ class AuditLogController extends Controller
             ],
         ]);
     }
+
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:audit_logs,id',
+        ]);
+
+        $deletedCount = AuditLog::whereIn('id', $validated['ids'])->delete();
+
+        return back()->with('success', "$deletedCount audit log(s) deleted successfully");
+    }
 }
