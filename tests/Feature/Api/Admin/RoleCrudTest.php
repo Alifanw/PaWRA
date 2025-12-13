@@ -19,20 +19,20 @@ class RoleCrudTest extends TestCase
     {
         parent::setUp();
 
-        // Create test roles
-        Role::factory()->create(['name' => 'superadmin']);
-        Role::factory()->create(['name' => 'admin']);
-        Role::factory()->create(['name' => 'user']);
+        // Create test roles (use factory-generated unique names)
+        $superadminRole = Role::factory()->create();
+        $adminRole = Role::factory()->create();
+        $userRole = Role::factory()->create();
 
         // Create test users
         $this->superadmin = User::factory()->create();
-        $this->superadmin->roles()->attach(Role::where('name', 'superadmin')->first());
+        $this->superadmin->roles()->attach($superadminRole);
 
         $this->admin = User::factory()->create();
-        $this->admin->roles()->attach(Role::where('name', 'admin')->first());
+        $this->admin->roles()->attach($adminRole);
 
         $this->regularUser = User::factory()->create();
-        $this->regularUser->roles()->attach(Role::where('name', 'user')->first());
+        $this->regularUser->roles()->attach($userRole);
     }
 
     /**
