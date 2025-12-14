@@ -11,15 +11,27 @@ use Illuminate\Support\Facades\DB;
 class ProductController extends Controller
 {
     /**
-     * Display a listing of products
+     * Display a listing of products filtered by role
      */
     public function index(Request $request): JsonResponse
     {
+        $user = auth()->user();
         $query = Product::with('category');
 
-        // Filter by category
+        // Apply role-based category filtering
+        $allowedCategoryTypes = $this->getAllowedCategoryTypes($user);
+        if (!empty($allowedCategoryTypes)) {
+            $query->whereHas('category', function ($q) use ($allowedCategoryTypes) {
+                $q->whereIn('category_type', $allowedCategoryTypes);
+            });
+        }
+
+        // Filter by category (must still respect role permissions)
         if ($request->has('category_id')) {
-            $query->where('category_id', $request->category_id);
+            $query->where('category_id', $request->category_id)
+                  ->whereHas('category', function ($q) use ($allowedCategoryTypes) {
+                      $q->whereIn('category_type', $allowedCategoryTypes);
+                  });
         }
 
         // Search by name
@@ -65,6 +77,17 @@ class ProductController extends Controller
      */
     public function show(Product $product): JsonResponse
     {
+        $user = auth()->user();
+        $allowedCategoryTypes = $this->getAllowedCategoryTypes($user);
+
+        // Check if user has access to this product's category
+        if (!empty($allowedCategoryTypes) && !in_array($product->category->category_type, $allowedCategoryTypes)) {
+            return response()->json([
+                'error' => 'Unauthorized',
+                'message' => 'You do not have access to this product'
+            ], 403);
+        }
+
         $product->load(['category', 'prices']);
         
         return response()->json(['data' => $product]);
@@ -75,6 +98,17 @@ class ProductController extends Controller
      */
     public function update(Request $request, Product $product): JsonResponse
     {
+        $user = auth()->user();
+        $allowedCategoryTypes = $this->getAllowedCategoryTypes($user);
+
+        // Check if user has access to this product's category
+        if (!empty($allowedCategoryTypes) && !in_array($product->category->category_type, $allowedCategoryTypes)) {
+            return response()->json([
+                'error' => 'Unauthorized',
+                'message' => 'You do not have access to this product'
+            ], 403);
+        }
+
         $validated = $request->validate([
             'category_id' => 'sometimes|exists:product_categories,id',
             'code' => 'sometimes|string|max:30|unique:products,code,' . $product->id,
@@ -99,6 +133,17 @@ class ProductController extends Controller
      */
     public function destroy(Request $request, Product $product): JsonResponse
     {
+        $user = auth()->user();
+        $allowedCategoryTypes = $this->getAllowedCategoryTypes($user);
+
+        // Check if user has access to this product's category
+        if (!empty($allowedCategoryTypes) && !in_array($product->category->category_type, $allowedCategoryTypes)) {
+            return response()->json([
+                'error' => 'Unauthorized',
+                'message' => 'You do not have access to this product'
+            ], 403);
+        }
+
         // Check if product is used in bookings
         $hasBookings = DB::table('booking_units')->where('product_id', $product->id)->exists();
         
@@ -116,6 +161,49 @@ class ProductController extends Controller
         return response()->json([
             'message' => 'Product deleted successfully'
         ]);
+    }
+
+    /**
+     * Get allowed category types for user based on their roles
+     */
+    protected function getAllowedCategoryTypes($user): array
+    {
+        if (!$user) {
+            return [];
+        }
+
+        // Load roles if not already loaded
+        if (!$user->relationLoaded('roles')) {
+            $user->load('roles');
+        }
+
+        $roleNames = $user->roles->pluck('name')->toArray();
+        $allowedTypes = [];
+
+        // Superadmin and admin can see all categories
+        if (in_array('superadmin', $roleNames) || in_array('admin', $roleNames)) {
+            return ['ticket', 'villa', 'parking', 'other'];
+        }
+
+        // Role-specific category access
+        if (in_array('ticketing', $roleNames)) {
+            $allowedTypes[] = 'ticket';
+        }
+
+        if (in_array('booking', $roleNames)) {
+            $allowedTypes[] = 'villa';
+        }
+
+        if (in_array('parking', $roleNames)) {
+            $allowedTypes[] = 'parking';
+        }
+
+        // Monitoring and other roles can see all
+        if (in_array('monitoring', $roleNames)) {
+            $allowedTypes = ['ticket', 'villa', 'parking', 'other'];
+        }
+
+        return array_unique($allowedTypes);
     }
 
     /**

@@ -15,6 +15,7 @@ class ProductAvailability extends Model
         'parent_unit',
         'unit_name',
         'unit_code',
+        'total_units',
         'max_capacity',
         'status',
         'description',

@@ -4,8 +4,13 @@ import { router } from '@inertiajs/react';
 import { TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
-
-export default function Create({ auth, products }) {
+export default function Create({ auth, products = [] }) {
+    // Filter products by category type (ticket for ticket sales)
+    const getFilteredProducts = () => {
+        return products?.filter(product => {
+            return !product.category || product.category.category_type === "ticket";
+        }) || [];
+    };
     const [cart, setCart] = useState([]);
     const [selectedProduct, setSelectedProduct] = useState('');
     const [quantity, setQuantity] = useState(1);
@@ -166,7 +171,7 @@ export default function Create({ auth, products }) {
                                 className="flex-1 rounded-md border-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600"
                             >
                                 <option value="">Select Product...</option>
-                                {products.map(p => (
+                                {getFilteredProducts()?.map(p => (
                                     <option key={p.id} value={p.id}>
                                         {p.name} - Rp {parseFloat(p.base_price).toLocaleString()}
                                     </option>

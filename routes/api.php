@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ProductCategoryController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\AvailabilityController;
 use App\Http\Controllers\Api\TicketSaleController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\Api\DoorlockController;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,13 +56,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Products & Categories
     Route::middleware('permission:products.manage,products.view')->group(function () {
         Route::apiResource('products', ProductController::class);
+        Route::apiResource('product-categories', ProductCategoryController::class);
     });
 
     // Product Availability
-    Route::middleware('permission:products.manage,products.view')->group(function () {
-        Route::get('availabilities', [AvailabilityController::class, 'getByProduct']);
-        Route::get('availabilities/product/{productId}', [AvailabilityController::class, 'getAllByProduct']);
-        Route::get('availabilities/calendar', [AvailabilityController::class, 'getCalendar']);
+    Route::middleware('permission:products.manage')->group(function () {
         Route::post('availabilities', [AvailabilityController::class, 'store']);
         Route::put('availabilities/{availability}', [AvailabilityController::class, 'update']);
         Route::delete('availabilities/{availability}', [AvailabilityController::class, 'destroy']);
@@ -139,6 +139,15 @@ Route::prefix('attendance')->group(function () {
     
     // Doorlock health check (public)
     Route::get('/doorlock/health', [AttendanceController::class, 'doorlockHealth']);
+
+    // Doorlock API endpoints (API key protected)
+    Route::prefix('doorlock')->group(function () {
+        Route::post('/scan', [DoorlockController::class, 'scan']);
+        Route::post('/door/open', [DoorlockController::class, 'doorOpen']);
+        Route::get('/status', [DoorlockController::class, 'status']);
+        Route::get('/logs', [DoorlockController::class, 'logs']);
+        Route::get('/stats', [DoorlockController::class, 'stats']);
+    });
 });
 
 // Admin API Routes

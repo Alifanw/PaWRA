@@ -124,11 +124,14 @@ class UserController extends Controller
 
         // Check if user is trying to delete their own account
         if (in_array(auth()->id(), $validated['ids'])) {
-            return back()->with('error', 'Cannot delete your own account');
+            return response()->json(['error' => 'Cannot delete your own account'], 422);
         }
 
         $deletedCount = User::whereIn('id', $validated['ids'])->delete();
 
-        return back()->with('success', "$deletedCount user(s) deleted successfully");
+        return response()->json([
+            'message' => "$deletedCount user(s) deleted successfully",
+            'deleted_count' => $deletedCount
+        ]);
     }
 }

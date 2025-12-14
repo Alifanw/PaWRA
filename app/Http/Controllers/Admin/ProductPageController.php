@@ -12,7 +12,23 @@ class ProductPageController extends Controller
 {
     public function index(Request $request)
     {
+        $user = auth()->user();
         $query = Product::with('category');
+
+        // Filter by user role
+        $userRoles = $user->roles()->pluck('name')->toArray();
+        
+        if (in_array('ticketing', $userRoles) && !in_array('admin', $userRoles) && !in_array('superadmin', $userRoles)) {
+            // Ticketing role - only ticket products
+            $query->whereHas('category', fn($q) => $q->where('category_type', 'ticket'));
+        } elseif (in_array('booking', $userRoles) && !in_array('admin', $userRoles) && !in_array('superadmin', $userRoles)) {
+            // Booking role - only villa products
+            $query->whereHas('category', fn($q) => $q->where('category_type', 'villa'));
+        } elseif (in_array('parking', $userRoles) && !in_array('admin', $userRoles) && !in_array('superadmin', $userRoles)) {
+            // Parking role - only parking products
+            $query->whereHas('category', fn($q) => $q->where('category_type', 'parking'));
+        }
+        // Admin and superadmin can see all products
 
         // Filter by category
         if ($request->has('category_id')) {
@@ -39,7 +55,18 @@ class ProductPageController extends Controller
                 'is_active' => $product->is_active,
             ]);
 
-        $categories = ProductCategory::orderBy('name')->get(['id', 'name']);
+        // Filter categories based on user role for the dropdown
+        $categoriesQuery = ProductCategory::orderBy('name');
+        
+        if (in_array('ticketing', $userRoles) && !in_array('admin', $userRoles) && !in_array('superadmin', $userRoles)) {
+            $categoriesQuery->where('category_type', 'ticket');
+        } elseif (in_array('booking', $userRoles) && !in_array('admin', $userRoles) && !in_array('superadmin', $userRoles)) {
+            $categoriesQuery->where('category_type', 'villa');
+        } elseif (in_array('parking', $userRoles) && !in_array('admin', $userRoles) && !in_array('superadmin', $userRoles)) {
+            $categoriesQuery->where('category_type', 'parking');
+        }
+        
+        $categories = $categoriesQuery->get(['id', 'name']);
 
         return Inertia::render('Admin/Products/Index', [
             'products' => $products,
@@ -86,8 +113,9 @@ class ProductPageController extends Controller
     {
         // Check if product is used in bookings or ticket sales
         if ($product->bookingUnits()->exists() || $product->ticketSaleItems()->exists()) {
-            return redirect()->route('admin.products.index')
-                ->with('error', 'Cannot delete product that is used in bookings or ticket sales');
+            return response()->json([
+                'error' => 'Cannot delete product that is used in bookings or ticket sales'
+            ], 422);
         }
 
         $product->delete();
@@ -113,12 +141,17 @@ class ProductPageController extends Controller
             ->toArray();
 
         if (!empty($productsInUse)) {
-            return back()->with('error', 'Cannot delete products in use: ' . implode(', ', $productsInUse));
+            return response()->json([
+                'error' => 'Cannot delete products in use: ' . implode(', ', $productsInUse)
+            ], 422);
         }
 
         // Bulk delete
         $deletedCount = Product::whereIn('id', $validated['ids'])->delete();
 
-        return back()->with('success', "$deletedCount product(s) deleted successfully");
+        return response()->json([
+            'message' => "$deletedCount product(s) deleted successfully",
+            'deleted_count' => $deletedCount
+        ]);
     }
 }

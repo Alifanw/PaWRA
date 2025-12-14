@@ -150,7 +150,9 @@ class RoleController extends Controller
             ->toArray();
 
         if (!empty($rolesInUse)) {
-            return back()->with('error', 'Cannot delete roles in use: ' . implode(', ', $rolesInUse));
+            return response()->json([
+                'error' => 'Cannot delete roles in use: ' . implode(', ', $rolesInUse)
+            ], 422);
         }
 
         // Bulk delete role permissions and roles
@@ -160,7 +162,10 @@ class RoleController extends Controller
 
         $deletedCount = Role::whereIn('id', $validated['ids'])->delete();
 
-        return back()->with('success', "$deletedCount role(s) deleted successfully");
+        return response()->json([
+            'message' => "$deletedCount role(s) deleted successfully",
+            'deleted_count' => $deletedCount
+        ]);
     }
 
     public function permissions(Role $role)

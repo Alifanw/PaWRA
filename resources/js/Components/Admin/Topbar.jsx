@@ -57,32 +57,7 @@ export default function Topbar({ onToggleSidebar, auth }) {
                             leaveTo="transform opacity-0 scale-95"
                         >
                             <Menu.Items className="absolute right-0 z-10 mt-2.5 w-48 origin-top-right rounded-md bg-white dark:bg-slate-900 py-2 shadow-lg ring-1 ring-slate-900/5 dark:ring-white/5 focus:outline-none">
-                            <Menu.Item>
-                                {({ active }) => (
-                                    <Link
-                                        href="/profile"
-                                        className={classNames(
-                                            active ? 'bg-slate-50 dark:bg-slate-800' : '',
-                                            'block px-3 py-1 text-sm leading-6 text-slate-900 dark:text-slate-100'
-                                        )}
-                                    >
-                                        Your Profile
-                                    </Link>
-                                )}
-                            </Menu.Item>
-                            <Menu.Item>
-                                {({ active }) => (
-                                    <Link
-                                        href="/settings"
-                                        className={classNames(
-                                            active ? 'bg-slate-50 dark:bg-slate-800' : '',
-                                            'block px-3 py-1 text-sm leading-6 text-slate-900 dark:text-slate-100'
-                                        )}
-                                    >
-                                        Settings
-                                    </Link>
-                                )}
-                            </Menu.Item>
+                           
                             <Menu.Item>
                                 {({ active }) => (
                                     <button

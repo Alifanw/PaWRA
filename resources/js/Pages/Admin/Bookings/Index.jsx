@@ -112,13 +112,29 @@ export default function BookingIndex({ auth, bookings, filters }) {
 
     const handleDelete = (id) => {
         if (confirm('Are you sure you want to delete this booking?')) {
-            router.delete(route('admin.bookings.destroy', id), {
-                onSuccess: () => {
+            fetch(route('admin.bookings.destroy', id), {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content,
+                },
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.error || 'Failed to delete booking');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
                     toast.success('Booking deleted successfully');
                     clearSelection();
-                },
-                onError: (errors) => toast.error(errors.error || 'Failed to delete booking'),
-            });
+                    router.reload();
+                })
+                .catch(error => {
+                    console.error('Delete error:', error);
+                    toast.error(error.message || 'Failed to delete booking');
+                });
         }
     };
 
@@ -128,21 +144,40 @@ export default function BookingIndex({ auth, bookings, filters }) {
             return;
         }
 
+        const countToDelete = selectedIds.length;
         setIsDeleting(true);
-        router.delete(route('admin.bookings.bulk-delete'), 
-            { ids: selectedIds },
-            {
-                onSuccess: () => {
-                    toast.success(`${selectedIds.length} booking(s) deleted successfully`);
-                    clearSelection();
-                    setIsDeleting(false);
-                },
-                onError: (errors) => {
-                    toast.error(errors.error || 'Failed to delete bookings');
-                    setIsDeleting(false);
+
+        fetch(route('admin.bookings.bulk-delete'), {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content,
+            },
+            body: JSON.stringify({ ids: selectedIds }),
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Failed to delete bookings');
+                    });
                 }
-            }
-        );
+                return response.json();
+            })
+            .then(data => {
+                if (data.message) {
+                    toast.success(data.message);
+                } else {
+                    toast.success(`${countToDelete} booking(s) deleted successfully`);
+                }
+                clearSelection();
+                setIsDeleting(false);
+                router.reload();
+            })
+            .catch(error => {
+                setIsDeleting(false);
+                console.error('Delete error:', error);
+                toast.error(error.message || 'Failed to delete bookings');
+            });
     };
 
     return (

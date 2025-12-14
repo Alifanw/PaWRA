@@ -86,6 +86,9 @@ class AuditLogController extends Controller
 
         $deletedCount = AuditLog::whereIn('id', $validated['ids'])->delete();
 
-        return back()->with('success', "$deletedCount audit log(s) deleted successfully");
+        return response()->json([
+            'message' => "$deletedCount audit log(s) deleted successfully",
+            'deleted_count' => $deletedCount
+        ]);
     }
 }

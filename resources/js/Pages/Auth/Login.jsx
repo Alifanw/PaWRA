@@ -56,28 +56,34 @@ export default function Login({ status, canResetPassword }) {
             post(route("login"), {
                 onSuccess: (response) => {
                     console.log(
-                        "✅ Login successful! Session established, redirecting..."
+                        "✅ Login successful! Session established, refreshing CSRF token..."
                     );
                     reset("password");
                     setIsSubmitting(false);
 
+                    // Refresh CSRF token from new session
+                    if (typeof window !== 'undefined' && window.updateCsrfToken) {
+                        window.updateCsrfToken();
+                    }
+
+                    // Clear any cached user data from previous session
+                    if (typeof window !== 'undefined' && window.localStorage) {
+                        const keysToPreserve = ['absensiDarkMode', 'theme'];
+                        const allKeys = Object.keys(window.localStorage);
+                        allKeys.forEach(key => {
+                            if (!keysToPreserve.includes(key)) {
+                                window.localStorage.removeItem(key);
+                            }
+                        });
+                    }
+
                     // Explicitly navigate to dashboard after successful login
-                    // Use window.location for hard redirect to ensure session is fully established
                     console.log("🔄 Performing redirect to dashboard...");
 
-                    // Wait a bit longer to ensure session cookie is set
+                    // Use Inertia navigation for better session handling
                     setTimeout(() => {
-                        // First try: Direct redirect
                         window.location.href = "/admin/dashboard";
-
-                        // Fallback: After 2 seconds, if still not redirected, force reload
-                        setTimeout(() => {
-                            console.log(
-                                "⚠️ Redirect timeout - forcing page reload"
-                            );
-                            window.location.reload();
-                        }, 2000);
-                    }, 300); // Reduced from 500ms to 300ms for faster redirect
+                    }, 300);
                 },
                 onError: (errors) => {
                     console.error(

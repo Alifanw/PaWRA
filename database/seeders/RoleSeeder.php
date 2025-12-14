@@ -9,6 +9,7 @@ class RoleSeeder extends Seeder
 {
     public function run(): void
     {
+        // Roles MUST match the names used in routes/web.php middleware
         $roles = [
             [
                 'id' => 1,
@@ -19,37 +20,31 @@ class RoleSeeder extends Seeder
             [
                 'id' => 2,
                 'name' => 'admin',
-                'description' => 'Administrative access',
+                'description' => 'Administrative access to all modules',
                 'is_active' => true,
             ],
             [
                 'id' => 3,
-                'name' => 'cashier',
-                'description' => 'Cashier access for ticket sales',
+                'name' => 'ticketing',
+                'description' => 'Access to ticketing and ticket sales',
                 'is_active' => true,
             ],
             [
                 'id' => 4,
-                'name' => 'ticket-officer',
-                'description' => 'Manage ticket sales and customers',
+                'name' => 'booking',
+                'description' => 'Access to booking management',
                 'is_active' => true,
             ],
             [
                 'id' => 5,
-                'name' => 'booking-officer',
-                'description' => 'Manage bookings and availability',
+                'name' => 'parking',
+                'description' => 'Access to parking management',
                 'is_active' => true,
             ],
             [
                 'id' => 6,
-                'name' => 'parking-attendant',
-                'description' => 'Parking management',
-                'is_active' => true,
-            ],
-            [
-                'id' => 7,
                 'name' => 'monitoring',
-                'description' => 'System monitoring and reporting',
+                'description' => 'Access to monitoring and reports',
                 'is_active' => true,
             ],
         ];
@@ -61,7 +56,7 @@ class RoleSeeder extends Seeder
             );
         }
 
-        // Assign permissions to superadmin
+        // Assign permissions to superadmin (all permissions)
         $superadmin = Role::where('name', 'superadmin')->first();
         if ($superadmin) {
             $superadmin->syncPermissions([
@@ -106,24 +101,65 @@ class RoleSeeder extends Seeder
                 'view-users',
                 'create-users',
                 'update-users',
+                'delete-users',
                 'view-products',
                 'create-products',
                 'update-products',
+                'delete-products',
                 'view-bookings',
+                'create-bookings',
                 'update-bookings',
+                'cancel-bookings',
                 'view-ticket-sales',
+                'create-ticket-sales',
+                'refund-tickets',
                 'view-reports',
                 'export-reports',
             ]);
         }
 
-        // Assign permissions to cashier
-        $cashier = Role::where('name', 'cashier')->first();
-        if ($cashier) {
-            $cashier->syncPermissions([
+        // Assign permissions to ticketing staff
+        $ticketing = Role::where('name', 'ticketing')->first();
+        if ($ticketing) {
+            $ticketing->syncPermissions([
                 'view-ticket-sales',
                 'create-ticket-sales',
                 'view-products',
+            ]);
+        }
+
+        // Assign permissions to booking staff
+        $booking = Role::where('name', 'booking')->first();
+        if ($booking) {
+            $booking->syncPermissions([
+                'view-bookings',
+                'create-bookings',
+                'update-bookings',
+                'view-products',
+            ]);
+        }
+
+        // Assign permissions to parking staff
+        $parking = Role::where('name', 'parking')->first();
+        if ($parking) {
+            $parking->syncPermissions([
+                'view-parking',
+                'manage-parking',
+                'view-products',
+            ]);
+        }
+
+        // Assign permissions to monitoring/reporting staff
+        // Monitoring should have access to nearly everything except user/role management
+        $monitoring = Role::where('name', 'monitoring')->first();
+        if ($monitoring) {
+            $monitoring->syncPermissions([
+                'view-products',
+                'view-bookings',
+                'view-ticket-sales',
+                'view-reports',
+                'export-reports',
+                'view-parking',
             ]);
         }
     }

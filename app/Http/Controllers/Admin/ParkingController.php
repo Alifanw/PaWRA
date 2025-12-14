@@ -205,6 +205,9 @@ class ParkingController extends Controller
 
         $deletedCount = ParkingTransaction::whereIn('id', $validated['ids'])->delete();
 
-        return back()->with('success', "$deletedCount parking transaction(s) deleted successfully");
+        return response()->json([
+            'message' => "$deletedCount parking transaction(s) deleted successfully",
+            'deleted_count' => $deletedCount
+        ]);
     }
 }

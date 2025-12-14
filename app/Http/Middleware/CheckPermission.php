@@ -66,7 +66,7 @@ class CheckPermission
             ->join('role_permissions', 'roles.id', '=', 'role_permissions.role_id')
             ->join('users', 'role_user.user_id', '=', 'users.id')
             ->where('role_user.user_id', $userId)
-            ->where('users.is_block', false)
+            ->where('users.is_active', true)
             ->pluck('role_permissions.permission')
             ->toArray();
 
@@ -83,11 +83,12 @@ class CheckPermission
             'action' => 'unauthorized_access_attempt',
             'resource' => $request->path(),
             'resource_id' => null,
-            'before_json' => json_encode([
+            'before' => json_encode([
                 'required_permissions' => $permissions,
                 'method' => $request->method(),
             ]),
-            'ip_addr' => $request->ip(),
+            'after' => null,
+            'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
             'created_at' => now(),
         ]);

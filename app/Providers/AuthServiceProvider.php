@@ -5,7 +5,12 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use App\Models\Role;
+use App\Models\Booking;
+use App\Models\TicketSale;
+use App\Models\ParkingTransaction;
 use App\Policies\RolePolicy;
+use App\Policies\BookingPolicy;
+use App\Policies\TicketSalePolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -17,6 +22,8 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         // 'App\\Models\\Model' => 'App\\Policies\\ModelPolicy',
         Role::class => RolePolicy::class,
+        Booking::class => BookingPolicy::class,
+        TicketSale::class => TicketSalePolicy::class,
     ];
 
     /**

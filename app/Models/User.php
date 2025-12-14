@@ -37,6 +37,11 @@ class User extends Authenticatable
     ];
 
     /**
+     * Auto-load relations
+     */
+    protected $with = ['roles'];
+
+    /**
      * The attributes that should be hidden for serialization.
      *
      * @var list<string>

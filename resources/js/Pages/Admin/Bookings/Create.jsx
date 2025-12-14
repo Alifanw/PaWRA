@@ -5,7 +5,13 @@ import AvailabilitySelector from '@/Components/AvailabilitySelector';
 import ProductAvailabilityStatus from '@/Components/ProductAvailabilityStatus';
 import toast from 'react-hot-toast';
 
-export default function Create({ auth, products }) {
+export default function Create({ auth, products = [] }) {
+    // Filter products by category type (villa for bookings)
+    const getFilteredProducts = () => {
+        return products?.filter(product => {
+            return !product.category || product.category.category_type === "villa";
+        }) || [];
+    };
     const { data, setData, post, processing, errors } = useForm({
         customer_name: '',
         customer_phone: '',
@@ -335,7 +341,7 @@ export default function Create({ auth, products }) {
                                                     required
                                                 >
                                                     <option value="">Select Product</option>
-                                                    {products?.map(product => (
+                                                    {getFilteredProducts()?.map(product => (
                                                         <option key={product.id} value={product.id}>
                                                             {product.name} - Rp {Number(product.base_price).toLocaleString('id-ID')}
                                                         </option>

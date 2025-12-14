@@ -29,10 +29,26 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        
+        // Ensure roles are loaded
+        if ($user) {
+            $user->load('roles');
+        }
+        
+        // Extract only role names as strings
+        $userRoles = $user ? $user->roles->pluck('name')->values()->toArray() : [];
+        
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user ? [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'name' => $user->name,
+                    'full_name' => $user->full_name,
+                    'roles' => $userRoles,
+                ] : null,
             ],
             'csrf_token' => csrf_token(),
             'ziggy' => fn() => [

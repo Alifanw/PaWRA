@@ -109,13 +109,29 @@ export default function ProductIndex({ auth, products, categories, filters }) {
 
     const handleDelete = (id) => {
         if (confirm('Are you sure you want to delete this product?')) {
-            router.delete(route('admin.products.destroy', id), {
-                onSuccess: () => {
+            fetch(route('admin.products.destroy', id), {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content,
+                },
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.error || 'Failed to delete product');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
                     toast.success('Product deleted successfully');
                     clearSelection();
-                },
-                onError: (errors) => toast.error(errors.error || 'Failed to delete product'),
-            });
+                    router.reload();
+                })
+                .catch(error => {
+                    console.error('Delete error:', error);
+                    toast.error(error.message || 'Failed to delete product');
+                });
         }
     };
 
@@ -125,21 +141,46 @@ export default function ProductIndex({ auth, products, categories, filters }) {
             return;
         }
 
+        const countToDelete = selectedIds.length;
         setIsDeleting(true);
-        router.delete(route('admin.products.bulk-delete'), 
-            { ids: selectedIds },
-            {
-                onSuccess: () => {
-                    toast.success(`${selectedIds.length} product(s) deleted successfully`);
-                    clearSelection();
-                    setIsDeleting(false);
-                },
-                onError: (errors) => {
-                    toast.error(errors.error || 'Failed to delete products');
-                    setIsDeleting(false);
+
+        // Use fetch for faster deletion
+        fetch(route('admin.products.bulk-delete'), {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content,
+            },
+            body: JSON.stringify({
+                ids: selectedIds,
+            }),
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Failed to delete products');
+                    });
                 }
-            }
-        );
+                return response.json();
+            })
+            .then(data => {
+                // Show success message
+                if (data.message) {
+                    toast.success(data.message);
+                } else {
+                    toast.success(`${countToDelete} product(s) deleted successfully`);
+                }
+                
+                // Reset loading state before reload
+                clearSelection();
+                setIsDeleting(false);
+                router.reload();
+            })
+            .catch(error => {
+                setIsDeleting(false);
+                console.error('Delete error:', error);
+                toast.error(error.message || 'Failed to delete products');
+            });
     };
 
     const handleSubmit = (e) => {
@@ -179,7 +220,13 @@ export default function ProductIndex({ auth, products, categories, filters }) {
                     <button
                         onClick={() => {
                             setEditingProduct(null);
-                            reset();
+                            setData({
+                                category_id: '',
+                                code: '',
+                                name: '',
+                                base_price: '',
+                                is_active: true,
+                            });
                             setShowModal(true);
                         }}
                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

@@ -12,7 +12,7 @@ export default function BulkActionsToolbar({ selectedIds, onSelectAll, selectAll
             return;
         }
 
-        if (confirm(`Are you sure you want to delete ${selectedCount} selected item(s)? This action cannot be undone.`)) {
+        if (confirm(`Are you sure you want to delete ${selectedCount} selected item(s)?`)) {
             // Call onDeleteSelected without waiting - let it handle its own state
             onDeleteSelected();
         }
@@ -64,7 +64,7 @@ export default function BulkActionsToolbar({ selectedIds, onSelectAll, selectAll
                 {/* Delete button */}
                 <button
                     onClick={handleDeleteAll}
-                    disabled={selectedCount === 0}
+                    disabled={selectedCount === 0 || isLoading}
                     className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     title={selectedCount > 0 ? `Delete ${selectedCount} item(s)` : "Select items to delete"}
                 >

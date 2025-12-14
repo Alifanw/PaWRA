@@ -58,29 +58,20 @@ class BookingController extends Controller
         $query = Product::where('is_active', true)
             ->with(['category', 'productCodes']);
 
-        // Filter by role if user has specific role
-        if ($user && $user->roles()->exists()) {
-            $roles = $user->roles()->pluck('slug')->toArray();
-
-            // Petugas Tiket: Permainan, Kolam, Tiket Masuk
-            if (in_array('ticket_staff', $roles)) {
-                $query->whereHas('category', function ($q) {
-                    $q->where('category_type', 'ticket');
-                });
-            }
-            // Petugas Villa: Villa dan Parking
-            elseif (in_array('villa_staff', $roles)) {
-                $query->whereHas('category', function ($q) {
-                    $q->where('category_type', 'villa');
-                });
-            }
-            // Petugas Parking
-            elseif (in_array('parking_staff', $roles)) {
-                $query->whereHas('category', function ($q) {
-                    $q->where('category_type', 'parking');
-                });
-            }
+        // Filter by user role
+        $userRoles = $user->roles()->pluck('name')->toArray();
+        
+        if (in_array('ticketing', $userRoles) && !in_array('admin', $userRoles) && !in_array('superadmin', $userRoles)) {
+            // Ticketing role - only ticket products
+            $query->whereHas('category', fn($q) => $q->where('category_type', 'ticket'));
+        } elseif (in_array('booking', $userRoles) && !in_array('admin', $userRoles) && !in_array('superadmin', $userRoles)) {
+            // Booking role - only villa products
+            $query->whereHas('category', fn($q) => $q->where('category_type', 'villa'));
+        } elseif (in_array('parking', $userRoles) && !in_array('admin', $userRoles) && !in_array('superadmin', $userRoles)) {
+            // Parking role - only parking products
+            $query->whereHas('category', fn($q) => $q->where('category_type', 'parking'));
         }
+        // Admin and superadmin can see all products
 
         $products = $query->get(['id', 'code', 'name', 'category_id', 'base_price']);
 
@@ -334,10 +325,6 @@ class BookingController extends Controller
 
     public function destroy(Booking $booking)
     {
-        if ($booking->status !== 'pending') {
-            return back()->with('error', 'Only pending bookings can be deleted');
-        }
-
         DB::beginTransaction();
         try {
             $booking->bookingUnits()->delete();
@@ -360,16 +347,6 @@ class BookingController extends Controller
             'ids.*' => 'exists:bookings,id',
         ]);
 
-        // Check which bookings are not pending
-        $nonPendingBookings = Booking::whereIn('id', $validated['ids'])
-            ->where('status', '!=', 'pending')
-            ->pluck('booking_code')
-            ->toArray();
-
-        if (!empty($nonPendingBookings)) {
-            return back()->with('error', 'Only pending bookings can be deleted: ' . implode(', ', $nonPendingBookings));
-        }
-
         DB::beginTransaction();
         try {
             // Get all bookings to delete
@@ -382,10 +359,13 @@ class BookingController extends Controller
             }
 
             DB::commit();
-            return back()->with('success', count($validated['ids']) . ' booking(s) deleted successfully');
+            return response()->json([
+                'message' => count($validated['ids']) . ' booking(s) deleted successfully',
+                'deleted_count' => count($validated['ids'])
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Failed to delete bookings');
+            return response()->json(['error' => 'Failed to delete bookings'], 422);
         }
     }
 }

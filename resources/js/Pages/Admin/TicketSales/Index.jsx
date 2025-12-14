@@ -143,21 +143,40 @@
                 return;
             }
 
+            const countToDelete = selectedIds.length;
             setIsDeleting(true);
-            router.delete(route('admin.ticket-sales.bulk-delete'), 
-                { ids: selectedIds },
-                {
-                    onSuccess: () => {
-                        toast.success(`${selectedIds.length} ticket sale(s) deleted successfully`);
-                        clearSelection();
-                        setIsDeleting(false);
-                    },
-                    onError: (errors) => {
-                        toast.error(errors.error || 'Failed to delete ticket sales');
-                        setIsDeleting(false);
+
+            fetch(route('admin.ticket-sales.bulk-delete'), {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content,
+                },
+                body: JSON.stringify({ ids: selectedIds }),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.error || 'Failed to delete ticket sales');
+                        });
                     }
-                }
-            );
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.message) {
+                        toast.success(data.message);
+                    } else {
+                        toast.success(`${countToDelete} ticket sale(s) deleted successfully`);
+                    }
+                    clearSelection();
+                    setIsDeleting(false);
+                    router.reload();
+                })
+                .catch(error => {
+                    setIsDeleting(false);
+                    console.error('Delete error:', error);
+                    toast.error(error.message || 'Failed to delete ticket sales');
+                });
         };
 
         return (

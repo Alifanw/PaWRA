@@ -1,0 +1,221 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                   ROLE-BASED ACCESS CONTROL TESTING                        ║
+║                         AirPanas System v1.0                               ║
+║                     Date: 13 Desember 2025                                 ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+📋 QUICK START
+
+1. Open your browser and go to:
+   http://projectakhir1.serverdata.asia/login
+
+2. Login with one of the test users below
+
+3. Test access to different pages
+
+4. Verify that user can ONLY access their designated page
+
+═══════════════════════════════════════════════════════════════════════════
+
+🔐 TEST USER CREDENTIALS
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 1️⃣  TICKETING USER (POS Tiket Only)                                      │
+├──────────────────────────────────────────────────────────────────────────┤
+│ Email:    ticket@airpanas.local                                          │
+│ Password: 123123                                                          │
+│ Expected: Can access POS Tiket + Dashboard only                          │
+│ Should see: POS form for selling tickets                                 │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 2️⃣  BOOKING USER (Villa Booking Only)                                    │
+├──────────────────────────────────────────────────────────────────────────┤
+│ Email:    booking@airpanas.local                                         │
+│ Password: 123123                                                          │
+│ Expected: Can access Booking + Dashboard only                            │
+│ Should see: Booking form for villa reservations                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 3️⃣  PARKING USER (Parking Only)                                          │
+├──────────────────────────────────────────────────────────────────────────┤
+│ Email:    parking@airpanas.local                                         │
+│ Password: 123123                                                          │
+│ Expected: Can access Parking + Dashboard only                            │
+│ Should see: Parking transaction form                                     │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 4️⃣  ADMIN USER (All Access)                                              │
+├──────────────────────────────────────────────────────────────────────────┤
+│ Email:    admin@airpanas.local                                           │
+│ Password: (your admin password)                                          │
+│ Expected: Can access ALL pages                                           │
+│ Should see: Full admin panel with all options                            │
+└──────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════
+
+✅ TESTING CHECKLIST
+
+TEST 1: TICKETING USER
+─────────────────────
+[ ] Login with: ticket@airpanas.local / 123123
+[ ] Navigate to: /admin/ticket-sales
+    → Should see: ✅ POS Tiket page loads
+[ ] Try to access: /admin/bookings
+    → Should redirect to: /admin/ticket-sales
+[ ] Try to access: /admin/products
+    → Should redirect to: /admin/ticket-sales
+[ ] Try to access: /admin/dashboard
+    → Should see: ✅ Dashboard page loads
+[ ] Logout
+
+TEST 2: BOOKING USER
+──────────────────
+[ ] Login with: booking@airpanas.local / 123123
+[ ] Navigate to: /admin/bookings
+    → Should see: ✅ Booking page loads
+[ ] Try to access: /admin/ticket-sales
+    → Should redirect to: /admin/bookings
+[ ] Try to access: /admin/products
+    → Should redirect to: /admin/bookings
+[ ] Try to access: /admin/dashboard
+    → Should see: ✅ Dashboard page loads
+[ ] Logout
+
+TEST 3: PARKING USER
+───────────────────
+[ ] Login with: parking@airpanas.local / 123123
+[ ] Navigate to: /admin/parking
+    → Should see: ✅ Parking page loads
+[ ] Try to access: /admin/ticket-sales
+    → Should redirect to: /admin/parking
+[ ] Try to access: /admin/bookings
+    → Should redirect to: /admin/parking
+[ ] Try to access: /admin/dashboard
+    → Should see: ✅ Dashboard page loads
+[ ] Logout
+
+TEST 4: ADMIN USER
+─────────────────
+[ ] Login with: admin@airpanas.local / (your password)
+[ ] Navigate to: /admin/products
+    → Should see: ✅ Products page loads
+[ ] Navigate to: /admin/ticket-sales
+    → Should see: ✅ POS Tiket page loads
+[ ] Navigate to: /admin/bookings
+    → Should see: ✅ Booking page loads
+[ ] Navigate to: /admin/parking
+    → Should see: ✅ Parking page loads
+[ ] Navigate to: /admin/users
+    → Should see: ✅ Users page loads
+[ ] Logout
+
+═══════════════════════════════════════════════════════════════════════════
+
+⚠️  TROUBLESHOOTING
+
+❌ ERROR 419 (Page Expired) during login?
+───────────────────────────────────────
+1. Clear browser cache:
+   - Press Ctrl+Shift+Delete
+   - Select "Cookies and other site data"
+   - Select "All time"
+   - Click "Clear data"
+
+2. Refresh the login page
+
+3. Try login again
+
+Alternative: Use Incognito/Private window mode
+
+═══════════════════════════════════════════════════════════════════════════
+
+📝 WHAT TO CHECK
+
+1. Login Works
+   - Can user login with correct credentials?
+   - Is user redirected to dashboard/home after login?
+
+2. Access Control Works
+   - Does ticketing user ONLY see POS Tiket?
+   - Does booking user ONLY see Booking?
+   - Does parking user ONLY see Parking?
+   - Can admin access all pages?
+
+3. Redirect Works
+   - If ticketing user tries to access /admin/bookings,
+     does it redirect back to /admin/ticket-sales?
+   - Same for other roles?
+
+4. Sidebar Menu
+   - Does sidebar show only relevant menu items?
+   - Are unauthorized menu items hidden?
+
+═══════════════════════════════════════════════════════════════════════════
+
+📊 EXPECTED BEHAVIOR SUMMARY
+
+TICKETING USER:
+├─ ✅ Can access: Dashboard, POS Tiket
+└─ ❌ Cannot access: Booking, Parkir, Produk, Pengguna, Role, Laporan
+
+BOOKING USER:
+├─ ✅ Can access: Dashboard, Booking
+└─ ❌ Cannot access: POS Tiket, Parkir, Produk, Pengguna, Role, Laporan
+
+PARKING USER:
+├─ ✅ Can access: Dashboard, Parkir
+└─ ❌ Cannot access: POS Tiket, Booking, Produk, Pengguna, Role, Laporan
+
+ADMIN USER:
+├─ ✅ Can access: ALL pages
+└─ ❌ Cannot access: (none)
+
+═══════════════════════════════════════════════════════════════════════════
+
+🔧 SERVER-SIDE COMMANDS (if needed)
+
+Check if middleware is registered:
+$ php artisan route:list | grep "ticket-sales"
+
+Clean up expired sessions (if getting 419 errors):
+$ php artisan tinker
+>>> \DB::table('sessions')->delete()
+>>> exit
+
+Verify test users exist:
+$ php artisan tinker
+>>> \App\Models\User::where('email', 'ticket@airpanas.local')->first()
+>>> \App\Models\User::where('email', 'booking@airpanas.local')->first()
+>>> \App\Models\User::where('email', 'parking@airpanas.local')->first()
+
+═══════════════════════════════════════════════════════════════════════════
+
+📚 DOCUMENTATION REFERENCE
+
+For detailed information, see:
+- RBAC_COMPLETE.md (Complete guide & troubleshooting)
+- DOKUMENTASI_LOGIN_PER_ROLE.md (Role documentation in Indonesian)
+- ROLE_BASED_ACCESS_TESTING.md (Technical testing guide)
+- RBAC_IMPLEMENTATION_SUMMARY.md (Implementation details)
+
+═══════════════════════════════════════════════════════════════════════════
+
+✨ EXPECTED RESULT
+
+After all testing is complete, the system should:
+✅ Allow users to login successfully
+✅ Restrict access based on user role
+✅ Auto-redirect unauthorized access attempts
+✅ Show only relevant menu items per role
+✅ Keep dashboard accessible to all authenticated users
+
+═══════════════════════════════════════════════════════════════════════════
+
+Questions? Check RBAC_COMPLETE.md or contact your developer.
+
+Status: READY FOR TESTING ✅
+Date: 13 Desember 2025

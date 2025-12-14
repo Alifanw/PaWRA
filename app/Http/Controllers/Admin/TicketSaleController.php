@@ -46,9 +46,25 @@ class TicketSaleController extends Controller
 
     public function create()
     {
-        $products = Product::where('is_active', true)
-            ->with('category')
-            ->get(['id', 'code', 'name', 'category_id', 'base_price']);
+        $user = auth()->user();
+        $query = Product::where('is_active', true)->with('category');
+
+        // Filter by user role
+        $userRoles = $user->roles()->pluck('name')->toArray();
+        
+        if (in_array('ticketing', $userRoles) && !in_array('admin', $userRoles) && !in_array('superadmin', $userRoles)) {
+            // Ticketing role - only ticket products
+            $query->whereHas('category', fn($q) => $q->where('category_type', 'ticket'));
+        } elseif (in_array('booking', $userRoles) && !in_array('admin', $userRoles) && !in_array('superadmin', $userRoles)) {
+            // Booking role - only villa products
+            $query->whereHas('category', fn($q) => $q->where('category_type', 'villa'));
+        } elseif (in_array('parking', $userRoles) && !in_array('admin', $userRoles) && !in_array('superadmin', $userRoles)) {
+            // Parking role - only parking products
+            $query->whereHas('category', fn($q) => $q->where('category_type', 'parking'));
+        }
+        // Admin and superadmin can see all products
+
+        $products = $query->get(['id', 'code', 'name', 'category_id', 'base_price']);
 
         return Inertia::render('Admin/TicketSales/Create', [
             'products' => $products,
@@ -324,16 +340,6 @@ class TicketSaleController extends Controller
             'ids.*' => 'exists:ticket_sales,id',
         ]);
 
-        // Check which sales are paid
-        $paidSales = TicketSale::whereIn('id', $validated['ids'])
-            ->where('transaction_status', '!=', 'unpaid')
-            ->pluck('invoice_no')
-            ->toArray();
-
-        if (!empty($paidSales)) {
-            return back()->with('error', 'Cannot delete paid transactions: ' . implode(', ', $paidSales));
-        }
-
         // Bulk delete
         DB::beginTransaction();
         try {
@@ -343,10 +349,13 @@ class TicketSaleController extends Controller
             $deletedCount = TicketSale::whereIn('id', $validated['ids'])->delete();
             DB::commit();
 
-            return back()->with('success', "$deletedCount ticket sale(s) deleted successfully");
+            return response()->json([
+                'message' => "$deletedCount ticket sale(s) deleted successfully",
+                'deleted_count' => $deletedCount
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Failed to delete ticket sales');
+            return response()->json(['error' => 'Failed to delete ticket sales'], 422);
         }
     }
 }

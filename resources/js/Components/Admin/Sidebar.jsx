@@ -15,22 +15,24 @@ import {
 import { useState, useEffect } from 'react';
 
 const navigation = [
-    { name: 'Dashboard', href: '/admin/dashboard', icon: HomeIcon, permission: '*' },
-    { name: 'Products', href: '/admin/products', icon: BuildingStorefrontIcon, permission: '*' },
-    { name: 'Bookings', href: '/admin/bookings', icon: CalendarDaysIcon, permission: '*' },
-    { name: 'Parking', href: '/admin/parking', icon: BuildingStorefrontIcon, permission: '*' },
-    { name: 'Ticket Sales', href: '/admin/ticket-sales', icon: TicketIcon, permission: '*' },
-    { name: 'Attendance', href: '/admin/attendance', icon: ClipboardDocumentCheckIcon, permission: '*' },
+    { name: 'Dashboard', href: '/admin/dashboard', icon: HomeIcon, roles: ['*'] },
+    { name: 'Ticket Sales', href: '/admin/ticket-sales', icon: TicketIcon, roles: ['ticketing', 'superadmin'] },
+    { name: 'Bookings', href: '/admin/bookings', icon: CalendarDaysIcon, roles: ['booking', 'superadmin'] },
+    { name: 'Parking', href: '/admin/parking', icon: BuildingStorefrontIcon, roles: ['parking', 'superadmin'] },
+    { name: 'Products', href: '/admin/products', icon: BuildingStorefrontIcon, roles: ['superadmin', 'monitoring'] },
+    { name: 'Product Codes', href: '/admin/product-codes', icon: ClipboardDocumentCheckIcon, roles: ['superadmin', 'monitoring'] },
+    { name: 'Users', href: '/admin/users', icon: UsersIcon, roles: ['superadmin', 'admin'] },
+    { name: 'Roles', href: '/admin/roles', icon: Cog6ToothIcon, roles: ['superadmin', 'admin'] },
     {
         name: 'Reports',
         icon: ChartBarIcon,
+        roles: ['superadmin', 'monitoring'],
         children: [
-            { name: 'All Transactions', href: '/admin/reports/all-transactions', permission: '*' },
+            { name: 'All Transactions', href: '/admin/reports/all-transactions', roles: ['superadmin', 'monitoring'] },
         ],
     },
-    { name: 'Users', href: '/admin/users', icon: UsersIcon, permission: '*' },
-    { name: 'Roles', href: '/admin/roles', icon: Cog6ToothIcon, permission: '*' },
-    { name: 'Audit Logs', href: '/admin/audit-logs', icon: ClipboardDocumentListIcon, permission: '*' },
+    { name: 'Audit Logs', href: '/admin/audit-logs', icon: ClipboardDocumentListIcon, roles: ['superadmin', 'monitoring'] },
+    { name: 'Attendance', href: '/admin/attendance', icon: ClipboardDocumentCheckIcon, roles: ['superadmin', 'monitoring'] },
 ];
 
 function classNames(...classes) {
@@ -40,7 +42,22 @@ function classNames(...classes) {
 export default function Sidebar({ collapsed = false, mobileOpen = false, onCloseMobile = () => {} }) {
     const { url, props } = usePage();
     const { auth } = props;
-    const permissions = auth?.user?.permissions || [];
+    const userRoles = auth?.user?.roles || [];
+    
+    // Extract role names from role objects or use string names directly
+    const roleNames = userRoles.map(role => {
+        if (typeof role === 'string') {
+            return role;
+        }
+        return role.name;
+    });
+
+    // Debug: Log user roles
+    useEffect(() => {
+        console.log('🔐 Sidebar Debug - User Roles:', userRoles);
+        console.log('🔐 Extracted role names:', roleNames);
+        console.log('🔐 Auth object:', auth?.user?.name);
+    }, [userRoles, roleNames, auth]);
 
     // track which parent menus are open (for animated dropdowns)
     const [openMenus, setOpenMenus] = useState({});
@@ -54,9 +71,32 @@ export default function Sidebar({ collapsed = false, mobileOpen = false, onClose
         setOpenMenus({});
     }, [url]);
 
-    const hasPermission = (permission) => {
-        if (permission === '*') return true;
-        return permissions.includes('*') || permissions.includes(permission);
+    const hasAccess = (itemRoles) => {
+        // Debug each check
+        console.log(`Checking access for roles:`, itemRoles, `User roles:`, roleNames);
+        
+        // Allow if no specific roles required or wildcard
+        if (!itemRoles || itemRoles.length === 0 || itemRoles.includes('*')) {
+            console.log('→ Allowed (wildcard or no requirement)');
+            return true;
+        }
+        
+        // Deny if user has no roles
+        if (!roleNames || !Array.isArray(roleNames) || roleNames.length === 0) {
+            console.log('→ Denied (user has no roles)');
+            return false;
+        }
+        
+        // Check if user has ANY of the required roles (case-insensitive)
+        const hasRole = itemRoles.some(role => {
+            const roleMatches = roleNames.some(userRole => 
+                userRole.toLowerCase() === role.toLowerCase()
+            );
+            console.log(`  Checking "${role}" in [${roleNames.join(', ')}]: ${roleMatches}`);
+            return roleMatches;
+        });
+        console.log(`→ ${hasRole ? 'Allowed' : 'Denied'} (role match:`, hasRole, ')');
+        return hasRole;
     };
 
     const isActive = (href) => {
@@ -94,8 +134,8 @@ export default function Sidebar({ collapsed = false, mobileOpen = false, onClose
             {/* Navigation */}
             <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
                 {navigation.map((item) => {
-                    // Skip items user doesn't have permission for
-                    if (item.permission && !hasPermission(item.permission)) {
+                    // Skip items user doesn't have access to
+                    if (!hasAccess(item.roles)) {
                         return null;
                     }
 
@@ -129,7 +169,7 @@ export default function Sidebar({ collapsed = false, mobileOpen = false, onClose
                                     )}>
                                         <div className="space-y-1">
                                             {item.children.map((child) => {
-                                                if (child.permission && !hasPermission(child.permission)) {
+                                                if (!hasAccess(child.roles)) {
                                                     return null;
                                                 }
                                                 return (

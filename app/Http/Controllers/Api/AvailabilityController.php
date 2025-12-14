@@ -38,10 +38,15 @@ class AvailabilityController extends Controller
             })
             ->groupBy('parent_unit')
             ->map(function ($rooms, $parentUnit) use ($checkin, $checkout) {
+                $totalRooms = $rooms->sum(function ($room) use ($checkin, $checkout) {
+                    // Use getAvailableCount to calculate actual available units per record
+                    return (int) $room->getAvailableCount($checkin, $checkout);
+                });
+
                 return [
                     'parent_unit' => $parentUnit ?: 'All Rooms',
                     'total_rooms' => $rooms->count(),
-                    'available_rooms' => $rooms->count(),
+                    'available_rooms' => $totalRooms,
                     'rooms' => $rooms->map(function ($room) use ($checkin, $checkout) {
                         return [
                             'id' => $room->id,
@@ -50,6 +55,7 @@ class AvailabilityController extends Controller
                             'description' => $room->description,
                             'max_capacity' => $room->max_capacity,
                             'status' => $room->status,
+                            'available_count' => (int) $room->getAvailableCount($checkin, $checkout),
                         ];
                     })->values()
                 ];
@@ -282,21 +288,27 @@ class AvailabilityController extends Controller
         $checkout = $request->checkout ? Carbon::createFromFormat('Y-m-d', $request->checkout)->startOfDay() : null;
         $requiredQty = (int) $request->quantity;
 
-        // Get available product codes
-        $query = $product->productCodes()->where('status', 'available');
+        // Get available product availability units (not product codes)
+        // Count how many units are available for the requested dates
+        $availableUnits = 0;
+        
+        $availabilities = $product->availabilityUnits()
+            ->where('status', 'available')
+            ->get();
 
-        if ($checkin && $checkout) {
-            $query->whereDoesntHave('bookingUnits.booking', function ($q) use ($checkin, $checkout) {
-                $q->whereNotIn('status', ['cancelled', 'rejected'])
-                    ->where(function ($subQ) use ($checkin, $checkout) {
-                        $subQ->where('checkin', '<', $checkout)
-                            ->where('checkout', '>', $checkin);
-                    });
-            });
+        foreach ($availabilities as $unit) {
+            if ($checkin && $checkout) {
+                // Check if unit is available for the date range
+                if ($unit->isAvailableForDates($checkin, $checkout)) {
+                    $availableUnits++;
+                }
+            } else {
+                // If no dates specified, count all available units
+                $availableUnits++;
+            }
         }
 
-        $availableCount = $query->count();
-        $isAvailable = $availableCount >= $requiredQty;
+        $isAvailable = $availableUnits >= $requiredQty;
 
         return response()->json([
             'success' => true,
@@ -304,11 +316,11 @@ class AvailabilityController extends Controller
             'product_name' => $product->name,
             'product_code' => $product->code,
             'available' => $isAvailable,
-            'available_count' => $availableCount,
+            'available_count' => $availableUnits,
             'required_count' => $requiredQty,
             'message' => $isAvailable 
-                ? "Tersedia {$availableCount} unit" 
-                : "Hanya tersedia {$availableCount} unit (dibutuhkan {$requiredQty})",
+                ? "Tersedia {$availableUnits} unit" 
+                : "Hanya tersedia {$availableUnits} unit (dibutuhkan {$requiredQty})",
         ]);
     }
 }

@@ -1,11 +1,20 @@
 import { useState, useEffect } from "react";
+import { usePage } from "@inertiajs/react";
 import Sidebar from "@/Components/Admin/Sidebar";
 import Topbar from "@/Components/Admin/Topbar";
 import { Toaster } from "react-hot-toast";
 
 export default function AdminLayout({ auth, children }) {
+    const { component } = usePage();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+    // Refresh CSRF token whenever component/page changes (user navigation)
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.updateCsrfToken) {
+            window.updateCsrfToken();
+        }
+    }, [component]);
 
     useEffect(() => {
         const handler = () => {
@@ -33,7 +42,12 @@ export default function AdminLayout({ auth, children }) {
 
             <div className="flex h-screen overflow-hidden bg-white dark:bg-slate-950">
                 {/* SIDEBAR */}
-                <Sidebar collapsed={sidebarCollapsed} mobileOpen={mobileSidebarOpen} onCloseMobile={() => setMobileSidebarOpen(false)} />
+                <Sidebar 
+                    auth={auth}
+                    collapsed={sidebarCollapsed} 
+                    mobileOpen={mobileSidebarOpen} 
+                    onCloseMobile={() => setMobileSidebarOpen(false)} 
+                />
 
                 <div className="flex flex-1 flex-col overflow-hidden">
                     {/* TOPBAR */}

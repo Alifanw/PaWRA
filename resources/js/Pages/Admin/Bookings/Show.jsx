@@ -137,7 +137,7 @@ export default function Show({ auth, booking }) {
           <h2 className="text-lg font-medium mb-3">Pembayaran</h2>
           <form onSubmit={submitPayment} className="space-y-3">
             <div>
-              <label htmlFor="payment-amount" className="block text-sm">Jumlah (Rp)</label>
+              <label htmlFor="payment-amount" className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">Jumlah (Rp)</label>
               <input
                 id="payment-amount"
                 name="amount"
@@ -150,15 +150,15 @@ export default function Show({ auth, booking }) {
                   const num = cleaned === '' ? '' : Number(cleaned);
                   setData('amount', num);
                 }}
-                className="w-full rounded-md border-slate-300 p-2"
+                className="w-full rounded-md border border-slate-300 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
               {errors.amount && <div className="text-red-600 text-sm">{errors.amount}</div>}
             </div>
 
             <div>
-              <label htmlFor="payment-method" className="block text-sm">Metode</label>
-              <select id="payment-method" name="payment_method" value={data.payment_method} onChange={e => setData('payment_method', e.target.value)} className="w-full rounded-md border-slate-300 p-2">
+              <label htmlFor="payment-method" className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">Metode</label>
+              <select id="payment-method" name="payment_method" value={data.payment_method} onChange={e => setData('payment_method', e.target.value)} className="w-full rounded-md border border-slate-300 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="cash">Cash</option>
                 <option value="bank_transfer">Bank Transfer</option>
                 <option value="e_wallet">E-Wallet</option>
@@ -166,8 +166,8 @@ export default function Show({ auth, booking }) {
             </div>
 
             <div>
-              <label htmlFor="payment-notes" className="block text-sm">Catatan</label>
-              <input id="payment-notes" name="notes" type="text" value={data.notes} onChange={e => setData('notes', e.target.value)} className="w-full rounded-md border-slate-300 p-2" />
+              <label htmlFor="payment-notes" className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">Catatan</label>
+              <input id="payment-notes" name="notes" type="text" value={data.notes} onChange={e => setData('notes', e.target.value)} className="w-full rounded-md border border-slate-300 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
 
             <div className="flex justify-end">
@@ -178,7 +178,7 @@ export default function Show({ auth, booking }) {
           </form>
 
           <div className="mt-4">
-            <h3 className="text-sm font-medium mb-2">Riwayat Pembayaran</h3>
+            
             <ul className="text-sm space-y-2">
               {booking?.payments?.map((p) => (
                 <li key={p.id} className="flex justify-between">

@@ -100,21 +100,40 @@ export default function UserIndex({ auth, users, roles, filters }) {
             return;
         }
 
+        const countToDelete = selectedIds.length;
         setIsDeleting(true);
-        router.delete(route('admin.users.bulk-delete'), 
-            { ids: selectedIds },
-            {
-                onSuccess: () => {
-                    toast.success(`${selectedIds.length} user(s) deleted successfully`);
-                    clearSelection();
-                    setIsDeleting(false);
-                },
-                onError: (errors) => {
-                    toast.error(errors.error || 'Failed to delete users');
-                    setIsDeleting(false);
+
+        fetch(route('admin.users.bulk-delete'), {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content,
+            },
+            body: JSON.stringify({ ids: selectedIds }),
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Failed to delete users');
+                    });
                 }
-            }
-        );
+                return response.json();
+            })
+            .then(data => {
+                if (data.message) {
+                    toast.success(data.message);
+                } else {
+                    toast.success(`${countToDelete} user(s) deleted successfully`);
+                }
+                clearSelection();
+                setIsDeleting(false);
+                router.reload();
+            })
+            .catch(error => {
+                setIsDeleting(false);
+                console.error('Delete error:', error);
+                toast.error(error.message || 'Failed to delete users');
+            });
     };
 
     const handleSubmit = (e) => {
